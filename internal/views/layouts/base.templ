@@ -4,7 +4,7 @@ import "github.com/melihkorkmaz/gtd/internal/views/partials"
 
 templ Base(title string) {
 	<!DOCTYPE html>
-	<html lang="en" data-theme="light">
+	<html lang="en" data-theme="bumblebee">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,6 +13,12 @@ templ Base(title string) {
 		<!-- DaisyUI with Tailwind CSS -->
 		<link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
 		<script src="https://cdn.tailwindcss.com"></script>
+		<script>
+			tailwind.config = {
+				theme: { extend: {} },
+				daisyui: { themes: ["bumblebee"] }
+			}
+		</script>
 		
 		<!-- Alpine.js -->
 		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>

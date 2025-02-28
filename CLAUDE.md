@@ -1,6 +1,7 @@
 # CLAUDE.md - GTD Application Guidelines
 
 ## Build & Run Commands
+
 - Run application: `go run cmd/server/main.go`
 - Install dependencies: `go mod tidy`
 - Format code: `go fmt ./...`
@@ -10,25 +11,48 @@
 - Generate templ templates: `templ generate`
 
 ## Code Style Guidelines
+
 - **Imports**: Group standard library, third-party packages, and internal packages
 - **Error handling**: Use descriptive error messages, check errors immediately
-- **Naming**: 
+- **Naming**:
   - Variables/functions: camelCase
   - Exported functions/types: PascalCase
   - Packages: lowercase, single word
 - **Comments**: Document all exported functions, types, and methods
 - **File structure**: One package per directory, main.go for executables
 - **HTML/CSS**: Follow BEM naming convention for CSS classes
-- **Technology stack**: Go, Chi router, Templ, HTMX, Alpine.js, DaisyUI/Tailwind CSS, PostgreSQL
+- **Technology stack**: Go, Chi router, Templ, HTMX, Alpine.js, DaisyUI/Tailwind CSS (Bumblebee theme), PostgreSQL
 
 ## Templ Guidelines
+
 - Use `templ.Script` for JavaScript function calls in components
 - Remember to make helper functions exportable (PascalCase) if used across components
 - For HTMX integration, use attributes like `hx-get`, `hx-post`, etc.
 - Render components with component.Render() in HTTP handlers
 - Generate code with `templ generate` after making changes to .templ files
 
+## Theme Customization
+
+- Current theme: **DaisyUI Bumblebee** theme
+- Configured in `/internal/views/layouts/base.templ`
+- The theme is set via:
+  1. HTML attribute: `<html lang="en" data-theme="Bumblebee">`
+  2. Tailwind config:
+
+     ```javascript
+     tailwind.config = {
+       theme: { extend: {} },
+       daisyui: { themes: ["bumblebee"] },
+     };
+     ```
+
+- Color classes follow DaisyUI conventions:
+  - `primary`, `secondary`, `accent`, `neutral`
+  - `base-100`, `base-200`, etc. for background shades
+  - `success`, `warning`, `error` for state colors
+
 ## Project Structure
+
 - **/cmd/server**: Main application entry point
 - **/internal/config**: Configuration handling (database, environment)
 - **/internal/handlers**: HTTP handlers organized by feature
@@ -38,3 +62,4 @@
   - **/pages**: Full page templates (projects.templ, tasks_list.templ)
   - **/partials**: Reusable component templates (task_row.templ, project_card.templ)
 - **/static**: Static assets (CSS, JavaScript)
+

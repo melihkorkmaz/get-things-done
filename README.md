@@ -18,12 +18,14 @@ A fullstack Go application built with:
 ### Installation
 
 1. Clone this repository
+
 ```bash
 git clone https://github.com/melihkorkmaz/gtd.git
 cd gtd
 ```
 
 2. Install dependencies
+
 ```bash
 go mod tidy
 ```
@@ -31,6 +33,7 @@ go mod tidy
 3. Choose a storage backend:
 
    **Option 1: In-memory storage**
+
    ```bash
    # Edit .env file and set USE_POSTGRES=false
    # Then run:
@@ -38,15 +41,17 @@ go mod tidy
    ```
 
    **Option 2: PostgreSQL with Docker (Recommended)**
+
    ```bash
    # Start PostgreSQL container
    docker compose up -d
-   
+
    # Run the application (it will use settings from .env file)
    go run cmd/server/main.go
    ```
 
    **Option 3: PostgreSQL (Manual setup)**
+
    ```bash
    # First, make sure PostgreSQL is running
    # Create a database for the application
@@ -59,6 +64,7 @@ go mod tidy
 
    **Configuration**
    The application uses a `.env` file for configuration with these default settings:
+
    ```
    DB_HOST=localhost
    DB_PORT=5432
@@ -71,11 +77,13 @@ go mod tidy
    ```
 
    You can override these settings with environment variables:
+
    ```bash
    DB_HOST=custom-host DB_PASSWORD=custom-password go run cmd/server/main.go
    ```
 
    Alternatively, you can set the complete DATABASE_URL:
+
    ```bash
    DATABASE_URL=postgres://user:password@localhost:5432/gtd?sslmode=disable go run cmd/server/main.go
    ```
@@ -112,7 +120,7 @@ go mod tidy
   - Engage: Context-based filtering and prioritization
 - Project management with task relationships and progress tracking
 - Advanced task filtering by status, context, and tags
-- Modern UI with DaisyUI and Tailwind CSS
+- Modern UI with DaisyUI Bumblebee theme and Tailwind CSS
 - Interactive UI with minimal JavaScript using HTMX and Alpine.js
 - PostgreSQL database integration for persistence
 
@@ -123,6 +131,7 @@ go mod tidy
 - [Templ](https://templ.guide/) - Go HTML templating language
 - [HTMX](https://htmx.org/) - HTML-based AJAX for modern web apps
 - [Alpine.js](https://alpinejs.dev/) - Minimal JavaScript framework
-- [DaisyUI](https://daisyui.com/) - Component library for Tailwind CSS
+- [DaisyUI](https://daisyui.com/) - Component library for Tailwind CSS, using Bumblebee theme
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
 - [PostgreSQL](https://www.postgresql.org/) - Relational database
+

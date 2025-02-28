@@ -11,14 +11,57 @@
 
 /* Search indicator */
 .search-indicator {
-    position: absolute;
-    right: 45px;
-    top: 10px;
     display: none;
 }
 
 .htmx-request .search-indicator {
     display: inline;
+}
+
+/* Admin layout styles */
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Make modals work with fixed layout */
+.modal {
+    z-index: 100;
+}
+
+/* Active menu item */
+.menu a.active {
+    background-color: hsl(var(--p) / 0.1);
+    color: hsl(var(--p));
+}
+
+/* Mobile responsive sidebar */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 0;
+        position: fixed;
+        z-index: 20;
+        transition: width 0.3s ease;
+    }
+    
+    .sidebar.open {
+        width: 16rem;
+    }
+    
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 10;
+    }
+    
+    .sidebar.open + .sidebar-overlay {
+        display: block;
+    }
 }
 
 /* Task card status styles */
