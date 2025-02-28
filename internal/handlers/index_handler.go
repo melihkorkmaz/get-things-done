@@ -40,14 +40,14 @@ type TaskStats struct {
 func (h *IndexHandler) HomePage(w http.ResponseWriter, r *http.Request) {
 	// Get counts for different task statuses
 	stats := TaskStats{}
-	
+
 	// Get all tasks
 	tasks, err := h.store.GetAll()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	// Count tasks by status
 	stats.Total = len(tasks)
 	for _, task := range tasks {
@@ -66,12 +66,12 @@ func (h *IndexHandler) HomePage(w http.ResponseWriter, r *http.Request) {
 			stats.Done++
 		}
 	}
-	
+
 	data := map[string]interface{}{
 		"Title": "Welcome to GTD App",
 		"Stats": stats,
 	}
-	
+
 	w.Header().Set("Content-Type", "text/html")
 	h.templates.templates.ExecuteTemplate(w, "base.html", data)
 }
@@ -80,14 +80,14 @@ func (h *IndexHandler) HomePage(w http.ResponseWriter, r *http.Request) {
 func (h *IndexHandler) WeeklyReviewPage(w http.ResponseWriter, r *http.Request) {
 	// Get counts for different task statuses
 	stats := TaskStats{}
-	
+
 	// Get all tasks
 	tasks, err := h.store.GetAll()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	// Count tasks by status
 	stats.Total = len(tasks)
 	for _, task := range tasks {
@@ -106,12 +106,12 @@ func (h *IndexHandler) WeeklyReviewPage(w http.ResponseWriter, r *http.Request) 
 			stats.Done++
 		}
 	}
-	
+
 	data := map[string]interface{}{
 		"Title": "Weekly Review",
 		"Stats": stats,
 	}
-	
+
 	w.Header().Set("Content-Type", "text/html")
 	h.templates.templates.ExecuteTemplate(w, "base.html", data)
 }

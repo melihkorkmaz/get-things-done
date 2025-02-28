@@ -10,13 +10,13 @@ type TaskStatus string
 
 const (
 	// Status constants for GTD workflow
-	StatusInbox    TaskStatus = "inbox"    // Uncategorized/unprocessed
-	StatusNext     TaskStatus = "next"     // Next actions
-	StatusWaiting  TaskStatus = "waiting"  // Waiting for someone else
+	StatusInbox     TaskStatus = "inbox"     // Uncategorized/unprocessed
+	StatusNext      TaskStatus = "next"      // Next actions
+	StatusWaiting   TaskStatus = "waiting"   // Waiting for someone else
 	StatusScheduled TaskStatus = "scheduled" // Scheduled for a specific time
-	StatusSomeday  TaskStatus = "someday"  // Someday/maybe items
-	StatusDone     TaskStatus = "done"     // Completed tasks
-	StatusProject  TaskStatus = "project"  // Multi-step projects
+	StatusSomeday   TaskStatus = "someday"   // Someday/maybe items
+	StatusDone      TaskStatus = "done"      // Completed tasks
+	StatusProject   TaskStatus = "project"   // Multi-step projects
 	StatusReference TaskStatus = "reference" // Reference material
 )
 
@@ -27,10 +27,10 @@ type Context string
 type Timeframe string
 
 const (
-	TimeframeToday     Timeframe = "today"
-	TimeframeThisWeek  Timeframe = "this_week"
-	TimeframeNextWeek  Timeframe = "next_week"
-	TimeframeSomeday   Timeframe = "someday"
+	TimeframeToday    Timeframe = "today"
+	TimeframeThisWeek Timeframe = "this_week"
+	TimeframeNextWeek Timeframe = "next_week"
+	TimeframeSomeday  Timeframe = "someday"
 )
 
 // Task represents a GTD task
@@ -39,22 +39,22 @@ type Task struct {
 	Title          string     `json:"title"`
 	Description    string     `json:"description"`
 	Status         TaskStatus `json:"status"`
-	ProjectID      string     `json:"projectId,omitempty"`     // For tasks that are part of a project
-	ParentID       string     `json:"parentId,omitempty"`      // For hierarchical tasks
-	Contexts       []Context  `json:"contexts,omitempty"`      // Where this can be done (home, work, phone, etc.)
-	Tags           []string   `json:"tags,omitempty"`          // Custom tags for organization
-	DueDate        *time.Time `json:"dueDate,omitempty"`       // When this must be completed by
-	ScheduledDate  *time.Time `json:"scheduledDate,omitempty"` // When this is scheduled to be done
-	TimeEstimate   int        `json:"timeEstimate,omitempty"`  // Estimated minutes to complete
+	ProjectID      string     `json:"projectId,omitempty"`      // For tasks that are part of a project
+	ParentID       string     `json:"parentId,omitempty"`       // For hierarchical tasks
+	Contexts       []Context  `json:"contexts,omitempty"`       // Where this can be done (home, work, phone, etc.)
+	Tags           []string   `json:"tags,omitempty"`           // Custom tags for organization
+	DueDate        *time.Time `json:"dueDate,omitempty"`        // When this must be completed by
+	ScheduledDate  *time.Time `json:"scheduledDate,omitempty"`  // When this is scheduled to be done
+	TimeEstimate   int        `json:"timeEstimate,omitempty"`   // Estimated minutes to complete
 	EnergyRequired string     `json:"energyRequired,omitempty"` // High, medium, low
-	Priority       int        `json:"priority,omitempty"`      // 1-3 priority level (1 highest)
-	Timeframe      Timeframe  `json:"timeframe,omitempty"`     // When this should be addressed
-	IsRecurring    bool       `json:"isRecurring,omitempty"`   // Whether this task recurs
-	RecurringRule  string     `json:"recurringRule,omitempty"` // Rule for recurrence (e.g., "daily", "weekly on Monday")
+	Priority       int        `json:"priority,omitempty"`       // 1-3 priority level (1 highest)
+	Timeframe      Timeframe  `json:"timeframe,omitempty"`      // When this should be addressed
+	IsRecurring    bool       `json:"isRecurring,omitempty"`    // Whether this task recurs
+	RecurringRule  string     `json:"recurringRule,omitempty"`  // Rule for recurrence (e.g., "daily", "weekly on Monday")
 	CreatedAt      time.Time  `json:"createdAt"`
 	UpdatedAt      time.Time  `json:"updatedAt"`
 	CompletedAt    *time.Time `json:"completedAt,omitempty"`
-	DeletedAt      *time.Time `json:"deletedAt,omitempty"`     // Soft delete support
+	DeletedAt      *time.Time `json:"deletedAt,omitempty"` // Soft delete support
 }
 
 // NewTask creates a new task with default values (in inbox)
@@ -75,7 +75,7 @@ func (t *Task) Validate() error {
 	if t.Title == "" {
 		return errors.New("task title cannot be empty")
 	}
-	
+
 	// Validate status is one of the defined constants
 	validStatus := map[TaskStatus]bool{
 		StatusInbox:     true,
@@ -87,11 +87,11 @@ func (t *Task) Validate() error {
 		StatusProject:   true,
 		StatusReference: true,
 	}
-	
+
 	if !validStatus[t.Status] {
 		return errors.New("invalid task status")
 	}
-	
+
 	return nil
 }
 

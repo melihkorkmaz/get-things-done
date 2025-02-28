@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"html/template"
 	"path/filepath"
 	"time"
@@ -49,18 +48,9 @@ func NewTemplateRenderer(templatesDir string) (*TemplateRenderer, error) {
 		},
 	}
 
-	// Parse templates with the function map
-	fmt.Println("Loading templates from:", templatesDir)
-	
+
 	// Load layout templates
 	layoutPattern := filepath.Join(templatesDir, "layouts/*.html")
-	fmt.Println("Loading layouts from:", layoutPattern)
-	layoutFiles, err := filepath.Glob(layoutPattern)
-	if err != nil {
-		return nil, fmt.Errorf("error finding layout templates: %v", err)
-	}
-	fmt.Println("Found layout files:", layoutFiles)
-	
 	tmpl, err := template.New("").Funcs(funcMap).ParseGlob(layoutPattern)
 	if err != nil {
 		return nil, err
@@ -68,26 +58,12 @@ func NewTemplateRenderer(templatesDir string) (*TemplateRenderer, error) {
 
 	// Parse partials
 	partialPattern := filepath.Join(templatesDir, "partials/*.html")
-	fmt.Println("Loading partials from:", partialPattern)
-	partialFiles, err := filepath.Glob(partialPattern)
-	if err != nil {
-		return nil, fmt.Errorf("error finding partial templates: %v", err)
-	}
-	fmt.Println("Found partial files:", partialFiles)
-	
 	if _, err := tmpl.ParseGlob(partialPattern); err != nil {
 		return nil, err
 	}
 
 	// Parse pages
 	pagePattern := filepath.Join(templatesDir, "pages/*.html")
-	fmt.Println("Loading pages from:", pagePattern)
-	pageFiles, err := filepath.Glob(pagePattern)
-	if err != nil {
-		return nil, fmt.Errorf("error finding page templates: %v", err)
-	}
-	fmt.Println("Found page files:", pageFiles)
-	
 	if _, err := tmpl.ParseGlob(pagePattern); err != nil {
 		return nil, err
 	}

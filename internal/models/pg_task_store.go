@@ -406,22 +406,22 @@ func (s *PgTaskStore) Search(query string) ([]*Task, error) {
 		)
 		ORDER BY created_at DESC
 	`
-	
+
 	// Add wildcards for partial matching
 	searchPattern := "%" + query + "%"
-	
+
 	rows, err := s.db.Query(context.Background(), sqlQuery, searchPattern)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var tasks []*Task
 	for rows.Next() {
 		var task Task
 		var contextsJSON, tagsJSON []byte
 		var dueDate, scheduledDate, completedAt, deletedAt pgtype.Timestamptz
-		
+
 		err := rows.Scan(
 			&task.ID, &task.Title, &task.Description, &task.Status, &task.ProjectID, &task.ParentID,
 			&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &task.TimeEstimate,
@@ -431,7 +431,7 @@ func (s *PgTaskStore) Search(query string) ([]*Task, error) {
 		if err != nil {
 			return nil, err
 		}
-		
+
 		// Convert JSON fields back to Go structures
 		if contextsJSON != nil {
 			var contexts []string
@@ -441,13 +441,13 @@ func (s *PgTaskStore) Search(query string) ([]*Task, error) {
 				}
 			}
 		}
-		
+
 		if tagsJSON != nil {
 			if err := json.Unmarshal(tagsJSON, &task.Tags); err != nil {
 				fmt.Printf("Error unmarshaling tags: %v\n", err)
 			}
 		}
-		
+
 		// Handle nullable time.Time fields
 		if dueDate.Valid {
 			t := dueDate.Time.Local()
@@ -465,13 +465,13 @@ func (s *PgTaskStore) Search(query string) ([]*Task, error) {
 			t := deletedAt.Time.Local()
 			task.DeletedAt = &t
 		}
-		
+
 		tasks = append(tasks, &task)
 	}
-	
+
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	
+
 	return tasks, nil
 }

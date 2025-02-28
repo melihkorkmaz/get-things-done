@@ -81,12 +81,12 @@ func (h *TaskHandler) CreateTaskAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	task := models.NewTask(request.Title, request.Description)
-	
+
 	// Convert string contexts to Context type
 	for _, ctx := range request.Contexts {
 		task.Contexts = append(task.Contexts, models.Context(ctx))
 	}
-	
+
 	// Add tags
 	task.Tags = request.Tags
 
@@ -116,20 +116,20 @@ func (h *TaskHandler) GetTaskAPI(w http.ResponseWriter, r *http.Request) {
 // UpdateTaskAPI updates a task from JSON input
 func (h *TaskHandler) UpdateTaskAPI(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	
+
 	// First get the existing task
 	task, err := h.store.Get(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	
+
 	// Decode the update request
 	if err := json.NewDecoder(r.Body).Decode(task); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	// Save the updated task
 	if err := h.store.Save(task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -143,7 +143,7 @@ func (h *TaskHandler) UpdateTaskAPI(w http.ResponseWriter, r *http.Request) {
 // DeleteTaskAPI deletes a task
 func (h *TaskHandler) DeleteTaskAPI(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	
+
 	if err := h.store.Delete(id); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -156,19 +156,19 @@ func (h *TaskHandler) DeleteTaskAPI(w http.ResponseWriter, r *http.Request) {
 func (h *TaskHandler) ListTasksPage(w http.ResponseWriter, r *http.Request) {
 	// Log when this handler is called
 	fmt.Printf("ListTasksPage handler called with path: %s and query: %s\n", r.URL.Path, r.URL.RawQuery)
-	
+
 	// Get status filter if provided
 	status := r.URL.Query().Get("status")
-	
+
 	var tasks []*models.Task
 	var err error
 	var title string
-	
+
 	if status != "" {
 		// Filter tasks by status
 		fmt.Printf("Filtering tasks by status: %s\n", status)
 		tasks, err = h.store.GetByStatus(models.TaskStatus(status))
-		
+
 		// Set title based on status
 		switch status {
 		case "inbox":
@@ -192,19 +192,19 @@ func (h *TaskHandler) ListTasksPage(w http.ResponseWriter, r *http.Request) {
 		tasks, err = h.store.GetAll()
 		title = "All Tasks"
 	}
-	
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	fmt.Printf("Found %d tasks\n", len(tasks))
 
 	// ********* TEMPORARY DIRECT HTML APPROACH *********
 	// This bypasses the template system to test if the route is working
-	
+
 	w.Header().Set("Content-Type", "text/html")
-	
+
 	taskListHtml := `
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -316,7 +316,7 @@ func (h *TaskHandler) ListTasksPage(w http.ResponseWriter, r *http.Request) {
             
             <div class="space-y-4">
 `
-	
+
 	if len(tasks) > 0 {
 		for _, task := range tasks {
 			taskListHtml += `
@@ -338,7 +338,7 @@ func (h *TaskHandler) ListTasksPage(w http.ResponseWriter, r *http.Request) {
                 <span>No tasks found. Create one using the Add Task button.</span>
             </div>`
 	}
-	
+
 	taskListHtml += `
             </div>
         </div>
@@ -347,31 +347,31 @@ func (h *TaskHandler) ListTasksPage(w http.ResponseWriter, r *http.Request) {
 </html>
 `
 	w.Write([]byte(taskListHtml))
-	
+
 	// ********* ORIGINAL APPROACH - COMMENTED OUT *********
 	/*
-	data := map[string]interface{}{
-		"Title": title,
-		"Tasks": tasks,
-	}
+		data := map[string]interface{}{
+			"Title": title,
+			"Tasks": tasks,
+		}
 
-	w.Header().Set("Content-Type", "text/html")
-	
-	// Print debug information
-	fmt.Printf("DEBUG: Executing template 'base.html' for ListTasksPage with title: %s and %d tasks\n", title, len(tasks))
-	
-	// Debug info about defined templates
-	for _, tmpl := range h.templates.templates.Templates() {
-		fmt.Printf("DEBUG: Found template: %s\n", tmpl.Name())
-	}
-	
-	// Execute the template and check for errors
-	err = h.templates.templates.ExecuteTemplate(w, "base.html", data)
-	if err != nil {
-		fmt.Printf("ERROR: Failed to execute template: %v\n", err)
-		http.Error(w, "Failed to render template: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+		w.Header().Set("Content-Type", "text/html")
+
+		// Print debug information
+		fmt.Printf("DEBUG: Executing template 'base.html' for ListTasksPage with title: %s and %d tasks\n", title, len(tasks))
+
+		// Debug info about defined templates
+		for _, tmpl := range h.templates.templates.Templates() {
+			fmt.Printf("DEBUG: Found template: %s\n", tmpl.Name())
+		}
+
+		// Execute the template and check for errors
+		err = h.templates.templates.ExecuteTemplate(w, "base.html", data)
+		if err != nil {
+			fmt.Printf("ERROR: Failed to execute template: %v\n", err)
+			http.Error(w, "Failed to render template: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	*/
 }
 
@@ -392,12 +392,12 @@ func (h *TaskHandler) CreateTaskSubmit(w http.ResponseWriter, r *http.Request) {
 	description := r.FormValue("description")
 
 	task := models.NewTask(title, description)
-	
+
 	// Handle contexts
 	for _, ctx := range r.Form["contexts[]"] {
 		task.Contexts = append(task.Contexts, models.Context(ctx))
 	}
-	
+
 	if err := h.store.Save(task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -425,9 +425,9 @@ func (h *TaskHandler) ViewTaskPage(w http.ResponseWriter, r *http.Request) {
 
 	// ********* TEMPORARY DIRECT HTML APPROACH *********
 	// This bypasses the template system to test if the route is working
-	
+
 	w.Header().Set("Content-Type", "text/html")
-	
+
 	taskHtml := `
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -654,16 +654,16 @@ func (h *TaskHandler) ViewTaskPage(w http.ResponseWriter, r *http.Request) {
 </html>
 `
 	w.Write([]byte(taskHtml))
-	
+
 	// ********* ORIGINAL APPROACH - COMMENTED OUT *********
 	/*
-	data := map[string]interface{}{
-		"Title": task.Title,
-		"Task":  task,
-	}
+		data := map[string]interface{}{
+			"Title": task.Title,
+			"Task":  task,
+		}
 
-	w.Header().Set("Content-Type", "text/html")
-	h.templates.templates.ExecuteTemplate(w, "base.html", data)
+		w.Header().Set("Content-Type", "text/html")
+		h.templates.templates.ExecuteTemplate(w, "base.html", data)
 	*/
 }
 
@@ -706,10 +706,10 @@ func (h *TaskHandler) SearchTasksAPI(w http.ResponseWriter, r *http.Request) {
 // SearchTasksPage renders the search results page for tasks
 func (h *TaskHandler) SearchTasksPage(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
-	
+
 	var tasks []*models.Task
 	var err error
-	
+
 	if query != "" {
 		tasks, err = h.store.Search(query)
 		if err != nil {
@@ -717,21 +717,21 @@ func (h *TaskHandler) SearchTasksPage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	data := map[string]interface{}{
 		"Title":        "Search Results",
 		"Tasks":        tasks,
 		"SearchQuery":  query,
 		"ResultsCount": len(tasks),
 	}
-	
+
 	// If this is an HTMX request, return just the search results
 	if r.Header.Get("HX-Request") == "true" {
 		w.Header().Set("Content-Type", "text/html")
 		h.templates.templates.ExecuteTemplate(w, "search_results", data)
 		return
 	}
-	
+
 	// Otherwise return the full page
 	w.Header().Set("Content-Type", "text/html")
 	h.templates.templates.ExecuteTemplate(w, "base.html", data)
@@ -744,25 +744,25 @@ func (h *TaskHandler) QuickCaptureAPI(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	// Get form values
 	title := r.FormValue("title")
 	description := r.FormValue("description")
-	
+
 	if title == "" {
 		http.Error(w, "Title is required", http.StatusBadRequest)
 		return
 	}
-	
+
 	// Create a new task
 	task := models.NewTask(title, description)
-	
+
 	// Save to the store
 	if err := h.store.Save(task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	// Return HTML response for HTMX
 	if r.Header.Get("HX-Request") == "true" {
 		w.Header().Set("Content-Type", "text/html")
@@ -780,7 +780,7 @@ func (h *TaskHandler) QuickCaptureAPI(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(successHTML))
 		return
 	}
-	
+
 	// JSON response if not HTMX
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
