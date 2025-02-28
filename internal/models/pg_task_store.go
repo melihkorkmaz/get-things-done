@@ -387,3 +387,91 @@ func (s *PgTaskStore) Delete(id string) error {
 	task.Delete()
 	return s.Save(task)
 }
+
+// Search finds tasks that match the query in title, description, contexts, or tags
+func (s *PgTaskStore) Search(query string) ([]*Task, error) {
+	// Build a query that searches in multiple columns with case-insensitive matching
+	sqlQuery := `
+		SELECT 
+			id, title, description, status, project_id, parent_id, 
+			contexts, tags, due_date, scheduled_date, time_estimate, 
+			energy_required, priority, timeframe, is_recurring, 
+			recurring_rule, created_at, updated_at, completed_at, deleted_at
+		FROM tasks
+		WHERE deleted_at IS NULL AND (
+			LOWER(title) LIKE LOWER($1) OR 
+			LOWER(description) LIKE LOWER($1) OR
+			contexts::text ILIKE $1 OR
+			tags::text ILIKE $1
+		)
+		ORDER BY created_at DESC
+	`
+	
+	// Add wildcards for partial matching
+	searchPattern := "%" + query + "%"
+	
+	rows, err := s.db.Query(context.Background(), sqlQuery, searchPattern)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var tasks []*Task
+	for rows.Next() {
+		var task Task
+		var contextsJSON, tagsJSON []byte
+		var dueDate, scheduledDate, completedAt, deletedAt pgtype.Timestamptz
+		
+		err := rows.Scan(
+			&task.ID, &task.Title, &task.Description, &task.Status, &task.ProjectID, &task.ParentID,
+			&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &task.TimeEstimate,
+			&task.EnergyRequired, &task.Priority, &task.Timeframe, &task.IsRecurring,
+			&task.RecurringRule, &task.CreatedAt, &task.UpdatedAt, &completedAt, &deletedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		
+		// Convert JSON fields back to Go structures
+		if contextsJSON != nil {
+			var contexts []string
+			if err := json.Unmarshal(contextsJSON, &contexts); err == nil {
+				for _, c := range contexts {
+					task.Contexts = append(task.Contexts, Context(c))
+				}
+			}
+		}
+		
+		if tagsJSON != nil {
+			if err := json.Unmarshal(tagsJSON, &task.Tags); err != nil {
+				fmt.Printf("Error unmarshaling tags: %v\n", err)
+			}
+		}
+		
+		// Handle nullable time.Time fields
+		if dueDate.Valid {
+			t := dueDate.Time.Local()
+			task.DueDate = &t
+		}
+		if scheduledDate.Valid {
+			t := scheduledDate.Time.Local()
+			task.ScheduledDate = &t
+		}
+		if completedAt.Valid {
+			t := completedAt.Time.Local()
+			task.CompletedAt = &t
+		}
+		if deletedAt.Valid {
+			t := deletedAt.Time.Local()
+			task.DeletedAt = &t
+		}
+		
+		tasks = append(tasks, &task)
+	}
+	
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	
+	return tasks, nil
+}

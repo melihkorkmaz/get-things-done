@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"strings"
 	"sync"
 )
 
@@ -10,6 +11,7 @@ type TaskStore interface {
 	Get(id string) (*Task, error)
 	GetAll() ([]*Task, error)
 	GetByStatus(status TaskStatus) ([]*Task, error)
+	Search(query string) ([]*Task, error)
 	Save(task *Task) error
 	Delete(id string) error
 }
@@ -101,4 +103,46 @@ func (s *MemoryTaskStore) Delete(id string) error {
 	
 	task.Delete()
 	return nil
+}
+
+// Search finds tasks that match the given query in title or description
+func (s *MemoryTaskStore) Search(query string) ([]*Task, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	
+	var result []*Task
+	
+	// Convert query to lowercase for case-insensitive search
+	lowerQuery := strings.ToLower(query)
+	
+	for _, task := range s.tasks {
+		// Skip deleted tasks
+		if task.IsDeleted() {
+			continue
+		}
+		
+		// Check if query is in title or description (case insensitive)
+		if strings.Contains(strings.ToLower(task.Title), lowerQuery) || 
+		   strings.Contains(strings.ToLower(task.Description), lowerQuery) {
+			result = append(result, task)
+		}
+		
+		// Also search in contexts and tags
+		for _, context := range task.Contexts {
+			if strings.Contains(strings.ToLower(string(context)), lowerQuery) {
+				result = append(result, task)
+				break // No need to check other contexts
+			}
+		}
+		
+		// Check tags
+		for _, tag := range task.Tags {
+			if strings.Contains(strings.ToLower(tag), lowerQuery) {
+				result = append(result, task)
+				break // No need to check other tags
+			}
+		}
+	}
+	
+	return result, nil
 }

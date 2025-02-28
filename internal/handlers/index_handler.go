@@ -75,3 +75,43 @@ func (h *IndexHandler) HomePage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	h.templates.templates.ExecuteTemplate(w, "base.html", data)
 }
+
+// WeeklyReviewPage renders the weekly review page
+func (h *IndexHandler) WeeklyReviewPage(w http.ResponseWriter, r *http.Request) {
+	// Get counts for different task statuses
+	stats := TaskStats{}
+	
+	// Get all tasks
+	tasks, err := h.store.GetAll()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	
+	// Count tasks by status
+	stats.Total = len(tasks)
+	for _, task := range tasks {
+		switch task.Status {
+		case models.StatusInbox:
+			stats.Inbox++
+		case models.StatusNext:
+			stats.Next++
+		case models.StatusWaiting:
+			stats.Waiting++
+		case models.StatusSomeday:
+			stats.Someday++
+		case models.StatusProject:
+			stats.Projects++
+		case models.StatusDone:
+			stats.Done++
+		}
+	}
+	
+	data := map[string]interface{}{
+		"Title": "Weekly Review",
+		"Stats": stats,
+	}
+	
+	w.Header().Set("Content-Type", "text/html")
+	h.templates.templates.ExecuteTemplate(w, "base.html", data)
+}

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"html/template"
 	"path/filepath"
 	"time"
@@ -27,38 +28,67 @@ func NewTemplateRenderer(templatesDir string) (*TemplateRenderer, error) {
 		"taskStatusBadge": func(status string) string {
 			switch status {
 			case "inbox":
-				return "neutral"
+				return "inbox"
 			case "next":
-				return "primary"
+				return "next"
 			case "waiting":
-				return "warning"
+				return "waiting"
 			case "someday":
-				return "secondary"
+				return "someday"
 			case "done":
-				return "success"
+				return "done"
 			case "project":
-				return "info"
+				return "project"
+			case "reference":
+				return "reference"
 			case "scheduled":
-				return "accent"
+				return "scheduled"
 			default:
-				return "ghost"
+				return "neutral"
 			}
 		},
 	}
 
 	// Parse templates with the function map
-	tmpl, err := template.New("").Funcs(funcMap).ParseGlob(filepath.Join(templatesDir, "layouts/*.html"))
+	fmt.Println("Loading templates from:", templatesDir)
+	
+	// Load layout templates
+	layoutPattern := filepath.Join(templatesDir, "layouts/*.html")
+	fmt.Println("Loading layouts from:", layoutPattern)
+	layoutFiles, err := filepath.Glob(layoutPattern)
+	if err != nil {
+		return nil, fmt.Errorf("error finding layout templates: %v", err)
+	}
+	fmt.Println("Found layout files:", layoutFiles)
+	
+	tmpl, err := template.New("").Funcs(funcMap).ParseGlob(layoutPattern)
 	if err != nil {
 		return nil, err
 	}
 
 	// Parse partials
-	if _, err := tmpl.ParseGlob(filepath.Join(templatesDir, "partials/*.html")); err != nil {
+	partialPattern := filepath.Join(templatesDir, "partials/*.html")
+	fmt.Println("Loading partials from:", partialPattern)
+	partialFiles, err := filepath.Glob(partialPattern)
+	if err != nil {
+		return nil, fmt.Errorf("error finding partial templates: %v", err)
+	}
+	fmt.Println("Found partial files:", partialFiles)
+	
+	if _, err := tmpl.ParseGlob(partialPattern); err != nil {
 		return nil, err
 	}
 
 	// Parse pages
-	if _, err := tmpl.ParseGlob(filepath.Join(templatesDir, "pages/*.html")); err != nil {
+	pagePattern := filepath.Join(templatesDir, "pages/*.html")
+	fmt.Println("Loading pages from:", pagePattern)
+	pageFiles, err := filepath.Glob(pagePattern)
+	if err != nil {
+		return nil, fmt.Errorf("error finding page templates: %v", err)
+	}
+	fmt.Println("Found page files:", pageFiles)
+	
+	if _, err := tmpl.ParseGlob(pagePattern); err != nil {
 		return nil, err
 	}
 

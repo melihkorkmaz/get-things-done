@@ -8,3 +8,56 @@
 .htmx-request.htmx-indicator {
     display: inline;
 }
+
+/* Search indicator */
+.search-indicator {
+    position: absolute;
+    right: 45px;
+    top: 10px;
+    display: none;
+}
+
+.htmx-request .search-indicator {
+    display: inline;
+}
+
+/* Task card status styles */
+.badge-inbox {
+    background-color: #3498db;
+    color: white;
+}
+
+.badge-next {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.badge-waiting {
+    background-color: #f1c40f;
+    color: black;
+}
+
+.badge-someday {
+    background-color: #9b59b6;
+    color: white;
+}
+
+.badge-project {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.badge-done {
+    background-color: #7f8c8d;
+    color: white;
+}
+
+.badge-reference {
+    background-color: #1abc9c;
+    color: white;
+}
+
+.badge-scheduled {
+    background-color: #e67e22;
+    color: white;
+}

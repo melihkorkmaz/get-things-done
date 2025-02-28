@@ -15,12 +15,13 @@
 3. **Create Basic Inbox** ✅
    - ✅ Build inbox view to show unprocessed items
    - ✅ Implement basic sorting and filtering
-   - ⬜ Add simple search functionality
+   - ✅ Add simple search functionality 
+   - ✅ Fix task views and UI consistency
 
 ## Remaining GTD Workflow Components
 
 1. **Capture** (Advanced)
-   - ⬜ Implement quick-entry modal accessible from anywhere
+   - ✅ Implement quick-entry modal accessible from anywhere
    - ⬜ Add email integration for capturing external items
 
 2. **Clarify/Process** ✅
@@ -35,7 +36,7 @@
    - ✅ Build project management with parent/child relationships
 
 4. **Reflect** ✅
-   - ⬜ Implement daily/weekly review checklists
+   - ✅ Implement daily/weekly review checklists
    - ✅ Create dashboard showing upcoming deadlines
    - ⬜ Add stale item detection
 
@@ -55,7 +56,7 @@
    - ✅ Build inbox processing view
    - ✅ Create list views for different GTD categories
    - ⬜ Implement drag-and-drop for organizing tasks
-   - ⬜ Design weekly review interface
+   - ✅ Design weekly review interface
 
 3. **Backend Features**
    - ⬜ Implement authentication system

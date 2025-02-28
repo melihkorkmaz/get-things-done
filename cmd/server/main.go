@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -98,10 +99,23 @@ func main() {
 	// Home page
 	r.Get("/", indexHandler.HomePage)
 	
+	// Weekly review page
+	r.Get("/weekly-review", indexHandler.WeeklyReviewPage)
+	
 	// API routes for hello example (from original setup)
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/hello", handlers.HelloHandler)
 	})
+
+	// Debug: Print registered routes
+	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		fmt.Printf("Route registered: %s %s\n", method, route)
+		return nil
+	}
+	
+	if err := chi.Walk(r, walkFunc); err != nil {
+		fmt.Printf("Error walking routes: %v\n", err)
+	}
 
 	// Start server
 	server := &http.Server{
@@ -113,6 +127,8 @@ func main() {
 
 	fmt.Printf("Server starting on port %s...\n", port)
 	fmt.Printf("Visit http://localhost:%s to get started\n", port)
+	fmt.Printf("Task list available at http://localhost:%s/tasks\n", port)
+	fmt.Printf("Inbox available at http://localhost:%s/tasks?status=inbox\n", port)
 	log.Fatal(server.ListenAndServe())
 }
 
@@ -143,7 +159,7 @@ func createSampleTasks(store models.TaskStore) {
 	store.Save(task5)
 }
 
-// fileServer conveniently sets up a http.FileServer handler to serve
+// fileServer sets up a http.FileServer handler to serve
 // static files from a http.FileSystem.
 func fileServer(r chi.Router, path string, root http.FileSystem) {
 	if path != "/" && path[len(path)-1] != '/' {
@@ -152,7 +168,29 @@ func fileServer(r chi.Router, path string, root http.FileSystem) {
 	}
 	path += "*"
 
-	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
-		http.FileServer(root).ServeHTTP(w, r)
+	fs := http.FileServer(root)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get the file path from the URL
+		filePath := r.URL.Path
+		extension := strings.ToLower(filepath.Ext(filePath))
+
+		// Set appropriate MIME types
+		switch extension {
+		case ".css":
+			w.Header().Set("Content-Type", "text/css")
+		case ".js":
+			w.Header().Set("Content-Type", "application/javascript")
+		case ".svg":
+			w.Header().Set("Content-Type", "image/svg+xml")
+		case ".png":
+			w.Header().Set("Content-Type", "image/png")
+		case ".jpg", ".jpeg":
+			w.Header().Set("Content-Type", "image/jpeg")
+		}
+
+		// Serve the file
+		http.StripPrefix(strings.TrimSuffix(path, "*"), fs).ServeHTTP(w, r)
 	})
+
+	r.Get(path, handler)
 }
