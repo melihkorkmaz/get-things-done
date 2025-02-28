@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/melihkorkmaz/gtd/internal/models"
+	"github.com/melihkorkmaz/gtd/internal/views/pages"
+	"github.com/melihkorkmaz/gtd/internal/views/partials"
 )
 
 // TaskHandler manages task-related HTTP endpoints
@@ -34,6 +36,27 @@ type CreateTaskRequest struct {
 	Description string   `json:"description"`
 	Contexts    []string `json:"contexts,omitempty"`
 	Tags        []string `json:"tags,omitempty"`
+}
+
+// Helper function to convert Task model to TaskCardInfo for templates
+func getTaskCardInfo(task *models.Task) partials.TaskCardInfo {
+	// Convert Context type to string slice
+	contexts := make([]string, len(task.Contexts))
+	for i, ctx := range task.Contexts {
+		contexts[i] = string(ctx)
+	}
+
+	return partials.TaskCardInfo{
+		ID:          task.ID,
+		Title:       task.Title,
+		Description: task.Description,
+		Status:      string(task.Status),
+		DueDate:     task.DueDate,
+		Contexts:    contexts,
+		Tags:        task.Tags,
+		CreatedAt:   task.CreatedAt,
+		ProjectID:   task.ProjectID,
+	}
 }
 
 // RegisterRoutes registers all task-related routes
@@ -200,109 +223,17 @@ func (h *TaskHandler) ListTasksPage(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("Found %d tasks\n", len(tasks))
 
-	// ********* TEMPORARY DIRECT HTML APPROACH *********
-	// This bypasses the template system to test if the route is working
+	// Convert tasks to template-friendly format
+	taskInfos := make([]partials.TaskCardInfo, len(tasks))
+	for i, task := range tasks {
+		taskInfos[i] = getTaskCardInfo(task)
+	}
 
+	// Render the page using the new templ system
+	tasksPage := pages.TasksListPage(title, taskInfos)
 	w.Header().Set("Content-Type", "text/html")
-
-	taskListHtml := `
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>` + title + ` - GTD App</title>
-    
-    <!-- DaisyUI with Tailwind CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
-    
-    <!-- HTMX -->
-    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="/static/css/main.css">
-</head>
-<body class="min-h-screen bg-base-200">
-    <div class="container mx-auto p-4">
-        <header class="navbar bg-base-100 rounded-box shadow-lg mb-6">
-            <div class="flex-1">
-                <a href="/" class="btn btn-ghost text-xl">GTD App</a>
-            </div>
-            <div class="flex-none">
-                <!-- Search box -->
-                <div class="form-control mx-2">
-                    <form action="/tasks/search" method="GET" class="flex">
-                        <div class="relative">
-                            <input type="text" name="q" placeholder="Search tasks..." 
-                                   class="input input-bordered w-24 md:w-auto" />
-                            <div class="search-indicator">
-                                <span class="loading loading-spinner loading-xs"></span>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </button>
-                    </form>
-                </div>
-                <!-- Quick Capture Button -->
-                <button class="btn btn-success btn-sm mx-2" onclick="document.getElementById('quick-capture-modal').showModal()">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Capture
-                </button>
-                <ul class="menu menu-horizontal px-1">
-                    <li><a href="/tasks">All Tasks</a></li>
-                    <li><a href="/tasks?status=inbox">Inbox</a></li>
-                    <li><a href="/tasks?status=next">Next Actions</a></li>
-                    <li><a href="/tasks?status=waiting">Waiting For</a></li>
-                    <li><a href="/tasks?status=someday">Someday/Maybe</a></li>
-                    <li><a href="/weekly-review" class="text-accent">Weekly Review</a></li>
-                </ul>
-            </div>
-        </header>
-
-    <div class="container mx-auto">
-        <div class="bg-base-100 p-6 rounded shadow">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold">` + title + `</h1>
-                <div class="flex items-center gap-4">
-                    <span class="badge">` + fmt.Sprintf("%d tasks found", len(tasks)) + `</span>
-                    <button class="btn btn-primary" onclick="document.getElementById('quick-capture-modal').showModal()">
-                        Add Task
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Quick Capture Modal -->
-            <dialog id="quick-capture-modal" class="modal">
-                <div class="modal-box">
-                    <h3 class="font-bold text-lg">Quick Capture</h3>
-                    <p class="py-2">Quickly capture a new task or idea.</p>
-                    
-                    <form method="POST" action="/tasks">
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">Task/Idea Title</span>
-                            </label>
-                            <input type="text" name="title" placeholder="Enter title..." class="input input-bordered" required />
-                        </div>
-                        
-                        <div class="form-control mt-2">
-                            <label class="label">
-                                <span class="label-text">Description (optional)</span>
-                            </label>
-                            <textarea name="description" placeholder="Enter description..." class="textarea textarea-bordered" rows="3"></textarea>
-                        </div>
-                        
-                        <div class="form-control mt-4">
-                            <button type="submit" class="btn btn-primary">Capture</button>
+	tasksPage.Render(r.Context(), w)
+}
                         </div>
                     </form>
                     
@@ -416,7 +347,21 @@ func (h *TaskHandler) CreateTaskSubmit(w http.ResponseWriter, r *http.Request) {
 
 // ViewTaskPage renders a single task view
 func (h *TaskHandler) ViewTaskPage(w http.ResponseWriter, r *http.Request) {
+	// Get task ID from URL
 	id := chi.URLParam(r, "id")
+	task, err := h.store.Get(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	// Convert task to template-friendly format
+	taskInfo := getTaskCardInfo(task)
+
+	// Render task detail page
+	w.Header().Set("Content-Type", "text/html")
+	pages.TaskDetailPage(taskInfo).Render(r.Context(), w)
+}
 	task, err := h.store.Get(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -705,7 +650,38 @@ func (h *TaskHandler) SearchTasksAPI(w http.ResponseWriter, r *http.Request) {
 
 // SearchTasksPage renders the search results page for tasks
 func (h *TaskHandler) SearchTasksPage(w http.ResponseWriter, r *http.Request) {
+	// Get search query
 	query := r.URL.Query().Get("q")
+
+	var tasks []*models.Task
+	var err error
+
+	if query != "" {
+		// Search tasks
+		tasks, err = h.store.Search(query)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// Convert tasks to template-friendly format
+	taskInfos := make([]partials.TaskCardInfo, len(tasks))
+	for i, task := range tasks {
+		taskInfos[i] = getTaskCardInfo(task)
+	}
+
+	// Create search results data
+	searchResults := partials.SearchResultsData{
+		SearchQuery:  query,
+		ResultsCount: len(tasks),
+		Tasks:        taskInfos,
+	}
+
+	// Render search results using the templ component
+	w.Header().Set("Content-Type", "text/html")
+	partials.SearchResults(searchResults).Render(r.Context(), w)
+}
 
 	var tasks []*models.Task
 	var err error

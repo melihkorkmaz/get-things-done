@@ -1,0 +1,54 @@
+package partials
+
+import "fmt"
+
+type SearchResultsData struct {
+	SearchQuery  string
+	ResultsCount int
+	Tasks        []TaskCardInfo
+}
+
+templ SearchResults(data SearchResultsData) {
+	<div class="search-results">
+		<div class="card bg-base-100 shadow">
+			<div class="card-body">
+				<h2 class="card-title">
+					Search Results
+					<span class="badge badge-primary">{ fmt.Sprint(data.ResultsCount) }</span>
+					if data.SearchQuery != "" {
+						<span class="text-sm font-normal">for "{ data.SearchQuery }"</span>
+					}
+				</h2>
+				
+				if data.SearchQuery != "" && data.ResultsCount == 0 {
+					<div class="alert alert-info shadow-lg">
+						<div>
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current flex-shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+							<span>No tasks found matching your search criteria.</span>
+						</div>
+					</div>
+				}
+				
+				if data.SearchQuery != "" && data.ResultsCount > 0 {
+					<div class="overflow-x-auto">
+						<table class="table w-full">
+							<thead>
+								<tr>
+									<th>Title</th>
+									<th>Status</th>
+									<th>Created</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								for _, task := range data.Tasks {
+									@TaskRow(task)
+								}
+							</tbody>
+						</table>
+					</div>
+				}
+			</div>
+		</div>
+	</div>
+}

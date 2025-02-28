@@ -1,0 +1,55 @@
+package partials
+
+import (
+	"fmt"
+	"time"
+)
+
+type TaskCardInfo struct {
+	ID          string
+	Title       string
+	Description string
+	Status      string
+	DueDate     *time.Time
+	Contexts    []string
+	Tags        []string
+	CreatedAt   time.Time
+	ProjectID   string
+}
+
+templ TaskCard(task TaskCardInfo) {
+	<div class="card bg-base-100 shadow-md my-2">
+		<div class="card-body p-4">
+			<div class="flex justify-between items-center">
+				<h3 class="card-title">{ task.Title }</h3>
+				<div class={ fmt.Sprintf("badge badge-%s", TaskStatusBadge(task.Status)) }>{ task.Status }</div>
+			</div>
+			
+			<p class="text-sm my-2">{ task.Description }</p>
+			
+			<div class="flex flex-wrap gap-1 mt-1">
+				for _, context := range task.Contexts {
+					<div class="badge badge-primary badge-sm">{ context }</div>
+				}
+				
+				for _, tag := range task.Tags {
+					<div class="badge badge-secondary badge-sm">{ tag }</div>
+				}
+			</div>
+			
+			if task.DueDate != nil {
+				<div class="text-xs text-gray-500 mt-2">Due: { FormatDate(task.DueDate) }</div>
+			}
+			
+			<div class="text-xs text-gray-500 mt-2">Created: { task.CreatedAt.Format("Jan 02, 2006") }</div>
+			
+			<div class="card-actions justify-end mt-2">
+				<a href={ templ.SafeURL(fmt.Sprintf("/tasks/%s", task.ID)) } class="btn btn-xs btn-outline">View</a>
+				<button class="btn btn-xs btn-outline" 
+						hx-get={ fmt.Sprintf("/tasks/%s/edit", task.ID) }
+						hx-target="#task-form-container" 
+						hx-swap="innerHTML">Edit</button>
+			</div>
+		</div>
+	</div>
+}

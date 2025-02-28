@@ -1,0 +1,92 @@
+package pages
+
+import (
+	"fmt"
+	"github.com/melihkorkmaz/gtd/internal/views/layouts"
+)
+
+type SystemStats struct {
+	Inbox    int
+	Next     int
+	Projects int
+}
+
+templ IndexPage(stats SystemStats) {
+	@layouts.Base("Welcome - GTD App") {
+		<div class="card bg-base-100 shadow-xl">
+			<div class="card-body">
+				<h2 class="card-title text-2xl">Welcome to Your GTD App!</h2>
+				<p class="py-2">This is a fullstack Go application implementing the Getting Things Done methodology.</p>
+				
+				<div class="py-4">
+					<h3 class="text-xl font-bold mb-2">GTD Workflow</h3>
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div class="card bg-base-200">
+							<div class="card-body">
+								<h4 class="card-title">Capture</h4>
+								<p>Collect what has your attention</p>
+								<div class="card-actions justify-end">
+									<button class="btn btn-primary" onclick="document.getElementById('quick-capture-modal').showModal()">
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+										</svg>
+										Quick Capture
+									</button>
+								</div>
+							</div>
+						</div>
+						
+						<div class="card bg-base-200">
+							<div class="card-body">
+								<h4 class="card-title">Process</h4>
+								<p>Empty your inboxes</p>
+								<div class="card-actions justify-end">
+									<a href="/tasks?status=inbox" class="btn btn-primary">View Inbox</a>
+								</div>
+							</div>
+						</div>
+						
+						<div class="card bg-base-200">
+							<div class="card-body">
+								<h4 class="card-title">Organize</h4>
+								<p>Put everything in the right place</p>
+								<div class="card-actions justify-end">
+									<a href="/tasks" class="btn btn-primary">View All Tasks</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="stats shadow mt-4">
+					<div class="stat">
+						<div class="stat-figure text-primary">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+						</div>
+						<div class="stat-title">Inbox</div>
+						<div class="stat-value text-primary">{ fmt.Sprint(stats.Inbox) }</div>
+						<div class="stat-desc">Items to process</div>
+					</div>
+					
+					<div class="stat">
+						<div class="stat-figure text-secondary">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+						</div>
+						<div class="stat-title">Next Actions</div>
+						<div class="stat-value text-secondary">{ fmt.Sprint(stats.Next) }</div>
+						<div class="stat-desc">Tasks to complete</div>
+					</div>
+					
+					<div class="stat">
+						<div class="stat-figure text-secondary">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+						</div>
+						<div class="stat-title">Projects</div>
+						<div class="stat-value">{ fmt.Sprint(stats.Projects) }</div>
+						<div class="stat-desc">Ongoing initiatives</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
