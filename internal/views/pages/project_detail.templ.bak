@@ -1,0 +1,311 @@
+package pages
+
+import (
+	"fmt"
+	"github.com/melihkorkmaz/gtd/internal/views/layouts"
+	"github.com/melihkorkmaz/gtd/internal/views/partials"
+)
+
+type AvailableTask struct {
+	ID    string
+	Title string
+}
+
+templ ProjectDetailPage(project partials.ProjectInfo, tasks []partials.TaskInfo, availableTasks []AvailableTask) {
+	@layouts.Base(fmt.Sprintf("%s - GTD App", project.Title)) {
+		<div class="card bg-base-100 shadow-xl">
+			<div class="card-body">
+				<div class="flex flex-wrap justify-between items-center mb-6">
+					<div>
+						<h2 class="card-title text-2xl">{ project.Title }</h2>
+						<div class={ fmt.Sprintf("badge badge-%s mt-1", partials.taskStatusBadge(project.Status)) }>{ project.Status }</div>
+					</div>
+					<div class="flex gap-2">
+						<button class="btn btn-primary" onclick="document.getElementById('add-task-modal').showModal()">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+							</svg>
+							Add Task
+						</button>
+						<div class="dropdown dropdown-end">
+							<label tabindex="0" class="btn">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+								</svg>
+							</label>
+							<ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+								<li><a href="#" onclick={ templ.Script(fmt.Sprintf("editProject('%s')", project.ID)) }>Edit Project</a></li>
+								<li><a href="#" onclick={ templ.Script(fmt.Sprintf("completeProject('%s')", project.ID)) }>Mark as Complete</a></li>
+								<li><a href="#" onclick={ templ.Script(fmt.Sprintf("archiveProject('%s')", project.ID)) } class="text-error">Archive Project</a></li>
+							</ul>
+						</div>
+					</div>
+				</div>
+				
+				<!-- Project Details -->
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+					<!-- Project Info -->
+					<div class="md:col-span-2">
+						<div class="prose max-w-none">
+							<p>{ project.Description }</p>
+						</div>
+						
+						<div class="mt-4">
+							<!-- Progress bar -->
+							<div class="flex justify-between mb-1">
+								<span class="text-sm font-medium">Progress</span>
+								<span class="text-sm font-medium">{ fmt.Sprintf("%d%%", project.CompletionPercentage) }</span>
+							</div>
+							<div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+								<div class="bg-primary h-2.5 rounded-full" style={ fmt.Sprintf("width: %d%%", project.CompletionPercentage) }></div>
+							</div>
+							
+							<!-- Tags and Contexts -->
+							<div class="flex flex-wrap gap-1 mt-4">
+								for _, context := range project.Contexts {
+									<div class="badge badge-primary">{ context }</div>
+								}
+								
+								for _, tag := range project.Tags {
+									<div class="badge badge-secondary">{ tag }</div>
+								}
+							</div>
+						</div>
+					</div>
+					
+					<!-- Project Stats -->
+					<div class="card bg-base-200 p-4">
+						<h3 class="font-bold text-lg mb-3">Details</h3>
+						<div class="divider my-1"></div>
+						<div class="flex flex-col gap-2">
+							<div class="flex justify-between">
+								<span class="font-medium">Created:</span>
+								<span>{ project.CreatedAt.Format("Jan 02, 2006") }</span>
+							</div>
+							
+							if project.DueDate != nil {
+								<div class="flex justify-between">
+									<span class="font-medium">Due Date:</span>
+									<span>{ partials.formatDate(project.DueDate) }</span>
+								</div>
+							}
+							
+							<div class="flex justify-between">
+								<span class="font-medium">Tasks:</span>
+								<span>{ fmt.Sprintf("%d total (%d completed)", project.TaskCount, project.CompletedTaskCount) }</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<!-- Tasks Section -->
+				<div>
+					<div class="flex justify-between items-center mb-4">
+						<h3 class="text-xl font-bold">Project Tasks</h3>
+						<div class="tabs">
+							<a class="tab tab-bordered tab-active" data-filter="all">All</a>
+							<a class="tab tab-bordered" data-filter="next">Next Actions</a>
+							<a class="tab tab-bordered" data-filter="waiting">Waiting For</a>
+							<a class="tab tab-bordered" data-filter="done">Completed</a>
+						</div>
+					</div>
+					
+					<!-- Tasks List -->
+					<div class="overflow-x-auto">
+						<table class="table w-full">
+							<thead>
+								<tr>
+									<th>Task</th>
+									<th>Status</th>
+									<th>Due Date</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody id="project-tasks">
+								if len(tasks) > 0 {
+									for _, task := range tasks {
+										@partials.ProjectTaskRow(task)
+									}
+								} else {
+									<tr>
+										<td colspan="4" class="text-center py-4">
+											<div class="alert">
+												<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+												<span>No tasks added to this project yet. Use the "Add Task" button to create tasks.</span>
+											</div>
+										</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Add Task Modal -->
+		<dialog id="add-task-modal" class="modal">
+			<div class="modal-box">
+				<h3 class="font-bold text-lg">Add Task to Project</h3>
+				<p class="py-2">Create a new task for this project.</p>
+				
+				<form method="POST" action={ fmt.Sprintf("/projects/%s/tasks", project.ID) } id="add-task-form">
+					<div class="form-control">
+						<label class="label">
+							<span class="label-text">Task Title</span>
+						</label>
+						<input type="text" name="title" placeholder="Enter task title..." class="input input-bordered" required />
+					</div>
+					
+					<div class="form-control mt-2">
+						<label class="label">
+							<span class="label-text">Description</span>
+						</label>
+						<textarea name="description" placeholder="Enter task description..." class="textarea textarea-bordered" rows="3"></textarea>
+					</div>
+					
+					<div class="form-control mt-2">
+						<label class="label">
+							<span class="label-text">Status</span>
+						</label>
+						<select name="status" class="select select-bordered">
+							<option value="next">Next Action</option>
+							<option value="waiting">Waiting For</option>
+						</select>
+					</div>
+					
+					<div class="form-control mt-2">
+						<label class="label">
+							<span class="label-text">Due Date (Optional)</span>
+						</label>
+						<input type="date" name="due_date" class="input input-bordered" />
+					</div>
+					
+					<div class="form-control mt-4">
+						<button type="submit" class="btn btn-primary">Add Task</button>
+					</div>
+				</form>
+				
+				<div class="divider">OR</div>
+				
+				<div class="form-control">
+					<label class="label">
+						<span class="label-text">Add Existing Task</span>
+					</label>
+					<select id="existing-task-select" class="select select-bordered">
+						<option disabled selected>Select a task to add to this project</option>
+						for _, task := range availableTasks {
+							<option value={ task.ID }>{ task.Title }</option>
+						}
+					</select>
+					<button class="btn btn-outline mt-2" onclick={ templ.Script(fmt.Sprintf("addExistingTask('%s')", project.ID)) }>Add Selected Task</button>
+				</div>
+				
+				<div class="modal-action">
+					<form method="dialog">
+						<button class="btn">Close</button>
+					</form>
+				</div>
+			</div>
+		</dialog>
+
+		<script>
+			// Task filtering
+			document.addEventListener('DOMContentLoaded', function() {
+				const tabs = document.querySelectorAll('.tabs .tab');
+				tabs.forEach(tab => {
+					tab.addEventListener('click', function() {
+						// Update active tab
+						tabs.forEach(t => t.classList.remove('tab-active'));
+						this.classList.add('tab-active');
+						
+						// Filter tasks
+						const filter = this.getAttribute('data-filter');
+						filterTasks(filter);
+					});
+				});
+				
+				function filterTasks(filter) {
+					const rows = document.querySelectorAll('#project-tasks tr.task-row');
+					rows.forEach(row => {
+						const status = row.getAttribute('data-status');
+						if (filter === 'all' || status === filter) {
+							row.style.display = '';
+						} else {
+							row.style.display = 'none';
+						}
+					});
+				}
+			});
+			
+			// Project actions
+			function editProject(projectId) {
+				window.location.href = '/projects/' + projectId + '/edit';
+			}
+			
+			function completeProject(projectId) {
+				if (!confirm('Mark this project as complete?')) return;
+				
+				fetch('/api/projects/' + projectId + '/complete', {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' }
+				})
+				.then(response => {
+					if (response.ok) {
+						window.location.reload();
+					} else {
+						alert('Failed to complete project');
+					}
+				})
+				.catch(error => {
+					console.error('Error:', error);
+				});
+			}
+			
+			function archiveProject(projectId) {
+				if (!confirm('Archive this project? It will be moved to the archive.')) return;
+				
+				fetch('/api/projects/' + projectId + '/archive', {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' }
+				})
+				.then(response => {
+					if (response.ok) {
+						window.location.href = '/projects';
+					} else {
+						alert('Failed to archive project');
+					}
+				})
+				.catch(error => {
+					console.error('Error:', error);
+				});
+			}
+			
+			// Task actions
+			function addExistingTask(projectId) {
+				const select = document.getElementById('existing-task-select');
+				const taskId = select.value;
+				
+				if (!taskId || taskId === 'Select a task to add to this project') {
+					alert('Please select a task to add');
+					return;
+				}
+				
+				fetch('/api/projects/' + projectId + '/tasks/' + taskId, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' }
+				})
+				.then(response => {
+					if (response.ok) {
+						window.location.reload();
+					} else {
+						alert('Failed to add task to project');
+					}
+				})
+				.catch(error => {
+					console.error('Error:', error);
+				});
+			}
+		</script>
+	}
+}

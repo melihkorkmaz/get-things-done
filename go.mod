@@ -1,6 +1,8 @@
 module github.com/melihkorkmaz/gtd
 
-go 1.21.1
+go 1.23
+
+toolchain go1.23.6
 
 require (
 	github.com/go-chi/chi/v5 v5.2.1
@@ -9,6 +11,7 @@ require (
 )
 
 require (
+	github.com/a-h/templ v0.3.833 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect

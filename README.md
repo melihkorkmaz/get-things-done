@@ -12,7 +12,8 @@ A fullstack Go application built with:
 
 ### Prerequisites
 
-- Go 1.16 or higher
+- Go 1.19 or higher
+- Templ cli (for template generation)
 
 ### Installation
 
@@ -88,9 +89,14 @@ go mod tidy
 ├── cmd
 │   └── server        # Main application entry point
 ├── internal
+│   ├── config        # Application configuration
 │   ├── handlers      # HTTP request handlers
 │   ├── models        # Domain models
-│   └── templates     # HTML templates
+│   ├── templates     # HTML templates (legacy, using template.html)
+│   └── views         # Templ templates (new templating system)
+│       ├── layouts   # Base layout templates
+│       ├── pages     # Page templates
+│       └── partials  # Reusable component templates
 └── static            # Static assets
     ├── css           # CSS files
     └── js            # JavaScript files
@@ -98,15 +104,25 @@ go mod tidy
 
 ## Features
 
-- Task management (GTD methodology)
+- Complete GTD (Getting Things Done) methodology implementation:
+  - Capture: Quick capture forms accessible from anywhere
+  - Clarify: Process inbox items into actionable tasks
+  - Organize: Projects, contexts, tags, and status organization
+  - Reflect: Weekly review features and dashboards
+  - Engage: Context-based filtering and prioritization
+- Project management with task relationships and progress tracking
+- Advanced task filtering by status, context, and tags
 - Modern UI with DaisyUI and Tailwind CSS
 - Interactive UI with minimal JavaScript using HTMX and Alpine.js
+- PostgreSQL database integration for persistence
 
 ## Built With
 
 - [Go](https://golang.org/)
 - [Chi Router](https://github.com/go-chi/chi)
-- [HTMX](https://htmx.org/)
-- [Alpine.js](https://alpinejs.dev/)
-- [DaisyUI](https://daisyui.com/)
-- [Tailwind CSS](https://tailwindcss.com/)
+- [Templ](https://templ.guide/) - Go HTML templating language
+- [HTMX](https://htmx.org/) - HTML-based AJAX for modern web apps
+- [Alpine.js](https://alpinejs.dev/) - Minimal JavaScript framework
+- [DaisyUI](https://daisyui.com/) - Component library for Tailwind CSS
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
+- [PostgreSQL](https://www.postgresql.org/) - Relational database

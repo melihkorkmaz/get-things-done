@@ -1,0 +1,117 @@
+package partials
+
+import (
+	"fmt"
+	"time"
+)
+
+type ProjectInfo struct {
+	ID                  string
+	Title               string
+	Description         string
+	Status              string
+	DueDate             *time.Time
+	Contexts            []string
+	Tags                []string
+	CreatedAt           time.Time
+	TaskCount           int
+	CompletedTaskCount  int
+	CompletionPercentage int
+}
+
+func FormatDate(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format("Jan 02, 2006")
+}
+
+func TaskStatusBadge(status string) string {
+	switch status {
+	case "inbox":
+		return "inbox"
+	case "next":
+		return "next"
+	case "waiting":
+		return "waiting"
+	case "someday":
+		return "someday"
+	case "done":
+		return "done"
+	case "project":
+		return "project"
+	case "reference":
+		return "reference"
+	case "scheduled":
+		return "scheduled"
+	default:
+		return "neutral"
+	}
+}
+
+templ ProjectCard(project ProjectInfo) {
+	<div class="card bg-base-100 shadow-md">
+		<div class="card-body p-4">
+			<div class="flex justify-between items-start">
+				<h3 class="card-title">{ project.Title }</h3>
+				<div class={ fmt.Sprintf("badge badge-%s", TaskStatusBadge(project.Status)) }>{ project.Status }</div>
+			</div>
+			
+			<p class="text-sm my-2 line-clamp-2">{ project.Description }</p>
+			
+			<!-- Project progress -->
+			<div class="mt-3">
+				<div class="flex justify-between mb-1">
+					<span class="text-xs font-medium">Progress</span>
+					<span class="text-xs font-medium">{ fmt.Sprintf("%d%%", project.CompletionPercentage) }</span>
+				</div>
+				<div class="w-full bg-gray-200 rounded-full h-2.5">
+					<div class="bg-primary h-2.5 rounded-full" style={ fmt.Sprintf("width: %d%%", project.CompletionPercentage) }></div>
+				</div>
+			</div>
+			
+			<!-- Project stats -->
+			<div class="flex flex-wrap gap-2 mt-3 text-xs text-gray-500">
+				<div class="flex items-center">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+					</svg>
+					{ fmt.Sprintf("%d Tasks", project.TaskCount) }
+				</div>
+				
+				if project.DueDate != nil {
+					<div class="flex items-center">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+						</svg>
+						Due: { FormatDate(project.DueDate) }
+					</div>
+				}
+				
+				<div class="flex items-center">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+					</svg>
+					{ project.CreatedAt.Format("Jan 02, 2006") }
+				</div>
+			</div>
+			
+			<!-- Tags and Contexts -->
+			<div class="flex flex-wrap gap-1 mt-2">
+				for _, context := range project.Contexts {
+					<div class="badge badge-primary badge-sm">{ context }</div>
+				}
+				
+				for _, tag := range project.Tags {
+					<div class="badge badge-secondary badge-sm">{ tag }</div>
+				}
+			</div>
+			
+			<!-- Actions -->
+			<div class="card-actions justify-end mt-2">
+				<a href={ templ.SafeURL(fmt.Sprintf("/projects/%s", project.ID)) } class="btn btn-xs btn-outline">View</a>
+				<button class="btn btn-xs btn-outline" hx-get={ fmt.Sprintf("/api/projects/%s/add-task", project.ID) } hx-target="#project-tasks">Add Task</button>
+			</div>
+		</div>
+	</div>
+}

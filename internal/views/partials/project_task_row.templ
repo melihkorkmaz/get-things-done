@@ -1,0 +1,51 @@
+package partials
+
+import (
+	"fmt"
+	"time"
+)
+
+type TaskInfo struct {
+	ID          string
+	Title       string
+	Description string
+	Status      string
+	DueDate     *time.Time
+	Contexts    []string
+	Tags        []string
+	CreatedAt   time.Time
+	ProjectID   string
+}
+
+templ ProjectTaskRow(task TaskInfo) {
+	<tr class="task-row" data-status={ task.Status }>
+		<td>
+			<div class="flex items-center space-x-3">
+				<div>
+					<div class="font-bold">{ task.Title }</div>
+					<div class="text-sm opacity-70 line-clamp-1">{ task.Description }</div>
+				</div>
+			</div>
+		</td>
+		<td>
+			<div class={ fmt.Sprintf("badge badge-%s", TaskStatusBadge(task.Status)) }>{ task.Status }</div>
+		</td>
+		<td>
+			if task.DueDate != nil {
+				{ FormatDate(task.DueDate) }
+			} else {
+				<span class="text-xs opacity-50">No due date</span>
+			}
+		</td>
+		<td>
+			<div class="flex gap-1">
+				<a href={ templ.SafeURL(fmt.Sprintf("/tasks/%s", task.ID)) } class="btn btn-xs">View</a>
+				if task.Status == "done" {
+					<button class="btn btn-xs btn-outline" hx-put={ fmt.Sprintf("/api/tasks/%s/reactivate", task.ID) } hx-target="closest tr" hx-swap="outerHTML">Reactivate</button>
+				} else {
+					<button class="btn btn-xs btn-success" hx-put={ fmt.Sprintf("/api/tasks/%s/complete", task.ID) } hx-target="closest tr" hx-swap="outerHTML">Complete</button>
+				}
+			</div>
+		</td>
+	</tr>
+}

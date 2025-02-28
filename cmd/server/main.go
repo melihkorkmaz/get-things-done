@@ -24,7 +24,7 @@ func main() {
 	} else {
 		log.Println("Loaded configuration from .env file")
 	}
-	
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3000"
@@ -36,32 +36,32 @@ func main() {
 
 	// Check if we should use PostgreSQL
 	useDB := os.Getenv("USE_POSTGRES") == "true"
-	
+
 	if useDB {
 		// Use PostgreSQL store with configuration
 		dbConfig := config.NewDatabaseConfigFromEnv()
 		dbConnString := os.Getenv("DATABASE_URL")
-		
+
 		// Allow override via DATABASE_URL if set
 		if dbConnString == "" {
 			dbConnString = dbConfig.ConnectionString()
 		}
-		
+
 		log.Printf("Connecting to PostgreSQL database: %s/%s", dbConfig.Host, dbConfig.DBName)
-		
+
 		pgStore, err := models.NewPgTaskStore(dbConnString)
 		if err != nil {
 			log.Fatalf("Failed to connect to PostgreSQL: %v", err)
 		}
 		defer pgStore.Close()
-		
+
 		taskStore = pgStore
 		log.Println("Using PostgreSQL database for task storage")
 	} else {
 		// Use in-memory store
 		taskStore = models.NewMemoryTaskStore()
 		log.Println("Using in-memory storage for tasks (data will be lost when server stops)")
-		
+
 		// Create some sample tasks for testing (only for in-memory store)
 		createSampleTasks(taskStore)
 	}
@@ -76,26 +76,26 @@ func main() {
 	workDir, _ := os.Getwd()
 	staticDir := filepath.Join(workDir, "static")
 	fileServer(r, "/static", http.Dir(staticDir))
-	
+
 	// Templates directory
 	templatesDir := filepath.Join(workDir, "internal/templates")
-	
+
 	// Initialize task handler
 	taskHandler, err := handlers.NewTaskHandler(taskStore, templatesDir)
 	if err != nil {
 		log.Fatalf("Failed to create task handler: %v", err)
 	}
-	
+
 	// Register task routes
 	taskHandler.RegisterRoutes(r)
 	taskHandler.RegisterTaskStatusRoutes(r)
-	
+
 	// Initialize project handler
 	projectHandler, err := handlers.NewProjectHandler(taskStore, templatesDir)
 	if err != nil {
 		log.Fatalf("Failed to create project handler: %v", err)
 	}
-	
+
 	// Register project routes
 	projectHandler.RegisterRoutes(r)
 
@@ -104,27 +104,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create index handler: %v", err)
 	}
-	
+
 	// Home page
 	r.Get("/", indexHandler.HomePage)
-	
+
 	// Weekly review page
 	r.Get("/weekly-review", indexHandler.WeeklyReviewPage)
-	
+
 	// API routes for hello example (from original setup)
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/hello", handlers.HelloHandler)
 	})
 
-	// Debug: Print registered routes
-	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
-		fmt.Printf("Route registered: %s %s\n", method, route)
-		return nil
-	}
-	
-	if err := chi.Walk(r, walkFunc); err != nil {
-		fmt.Printf("Error walking routes: %v\n", err)
-	}
 
 	// Start server
 	server := &http.Server{
@@ -146,22 +137,22 @@ func createSampleTasks(store models.TaskStore) {
 	// Inbox item
 	task1 := models.NewTask("Capture all open loops", "Gather all tasks, ideas, and commitments into the inbox")
 	store.Save(task1)
-	
+
 	// Next action
 	task2 := models.NewTask("Process inbox items", "Go through inbox and decide what to do with each item")
 	task2.MarkAsNext()
 	store.Save(task2)
-	
+
 	// Waiting for
 	task3 := models.NewTask("Response from email", "Waiting for reply from team about project timeline")
 	task3.MarkAsWaiting()
 	store.Save(task3)
-	
+
 	// Someday/maybe
 	task4 := models.NewTask("Learn a new language", "Consider learning Spanish or German")
 	task4.MarkAsSomeday()
 	store.Save(task4)
-	
+
 	// Project
 	task5 := models.NewTask("Redesign personal website", "Project to update and refresh my personal website")
 	task5.MarkAsProject()

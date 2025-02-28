@@ -58,28 +58,28 @@ The GTD Projects feature will be implemented using the following approach:
 3. **Progress tracking**: A project's progress will be calculated based on the completion status of its child tasks
 4. **Separate interface**: Projects will have dedicated UI views while maintaining consistency with the rest of the app
 
-1. **Projects View**
-   - ⬜ Create dedicated Projects list page with project cards
-   - ⬜ Design project card with progress indicator and summary
-   - ⬜ Implement filtering and sorting options for projects
-   - ⬜ Add quick-add project button
+1. **Projects View** ✅
+   - ✅ Create dedicated Projects list page with project cards
+   - ✅ Design project card with progress indicator and summary
+   - ✅ Implement filtering and sorting options for projects
+   - ✅ Add quick-add project button
 
-2. **Project Detail View**
-   - ⬜ Build project detail page showing project information
-   - ⬜ Implement next actions list associated with the project
-   - ⬜ Add project completion tracking and status indicators
-   - ⬜ Create project timeline/deadline visualization
+2. **Project Detail View** ✅
+   - ✅ Build project detail page showing project information
+   - ✅ Implement next actions list associated with the project
+   - ✅ Add project completion tracking and status indicators
+   - ✅ Create project timeline/deadline visualization
    - ⬜ Add notes section for project planning
 
-3. **Task-Project Relationship**
-   - ⬜ Enhance task creation to allow assigning to a project
-   - ⬜ Create UI for moving tasks between projects
-   - ⬜ Implement child task creation within a project
+3. **Task-Project Relationship** ✅
+   - ✅ Enhance task creation to allow assigning to a project
+   - ✅ Create UI for moving tasks between projects
+   - ✅ Implement child task creation within a project
    - ⬜ Add dependency tracking between project tasks (optional)
 
-4. **Project Management**
-   - ⬜ Implement project status transitions (active, on-hold, completed)
-   - ⬜ Add project archiving functionality
+4. **Project Management** ✅
+   - ✅ Implement project status transitions (active, on-hold, completed)
+   - ✅ Add project archiving functionality
    - ⬜ Create project templates for recurring projects (optional)
    - ⬜ Implement project sharing/collaboration features (future)
 

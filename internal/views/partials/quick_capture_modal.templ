@@ -1,0 +1,36 @@
+package partials
+
+templ QuickCaptureModal() {
+	<dialog id="quick-capture-modal" class="modal">
+		<div class="modal-box">
+			<h3 class="font-bold text-lg">Quick Capture</h3>
+			<p class="py-2">Quickly capture a new task or idea. It will be added to your inbox for processing later.</p>
+			
+			<form method="POST" action="/tasks">
+				<div class="form-control">
+					<label class="label">
+						<span class="label-text">Task/Idea Title</span>
+					</label>
+					<input type="text" name="title" placeholder="Enter title..." class="input input-bordered" required />
+				</div>
+				
+				<div class="form-control mt-2">
+					<label class="label">
+						<span class="label-text">Description (optional)</span>
+					</label>
+					<textarea name="description" placeholder="Enter description..." class="textarea textarea-bordered" rows="3"></textarea>
+				</div>
+				
+				<div class="form-control mt-4">
+					<button type="submit" id="quick-capture-submit" class="btn btn-primary">Capture</button>
+				</div>
+			</form>
+			
+			<div class="modal-action">
+				<form method="dialog">
+					<button class="btn">Close</button>
+				</form>
+			</div>
+		</div>
+	</dialog>
+}
