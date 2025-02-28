@@ -89,6 +89,15 @@ func main() {
 	// Register task routes
 	taskHandler.RegisterRoutes(r)
 	taskHandler.RegisterTaskStatusRoutes(r)
+	
+	// Initialize project handler
+	projectHandler, err := handlers.NewProjectHandler(taskStore, templatesDir)
+	if err != nil {
+		log.Fatalf("Failed to create project handler: %v", err)
+	}
+	
+	// Register project routes
+	projectHandler.RegisterRoutes(r)
 
 	// Initialize index handler
 	indexHandler, err := handlers.NewIndexHandler(taskStore, templatesDir)

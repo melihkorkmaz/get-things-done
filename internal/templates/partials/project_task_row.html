@@ -1,0 +1,32 @@
+{{ define "project_task_row" }}
+<tr class="task-row" data-status="{{ .Status }}">
+    <td>
+        <div class="flex items-center space-x-3">
+            <div>
+                <div class="font-bold">{{ .Title }}</div>
+                <div class="text-sm opacity-70 line-clamp-1">{{ .Description }}</div>
+            </div>
+        </div>
+    </td>
+    <td>
+        <div class="badge badge-{{ taskStatusBadge .Status }}">{{ .Status }}</div>
+    </td>
+    <td>
+        {{ if .DueDate }}
+        {{ formatDate .DueDate }}
+        {{ else }}
+        <span class="text-xs opacity-50">No due date</span>
+        {{ end }}
+    </td>
+    <td>
+        <div class="flex gap-1">
+            <a href="/tasks/{{ .ID }}" class="btn btn-xs">View</a>
+            {{ if eq .Status "done" }}
+            <button class="btn btn-xs btn-outline" onclick="reactivateTask('{{ .ID }}')">Reactivate</button>
+            {{ else }}
+            <button class="btn btn-xs btn-success" onclick="completeTask('{{ .ID }}')">Complete</button>
+            {{ end }}
+        </div>
+    </td>
+</tr>
+{{ end }}
