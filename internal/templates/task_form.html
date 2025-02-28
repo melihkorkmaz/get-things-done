@@ -1,0 +1,83 @@
+<div class="card bg-base-100 shadow-sm mb-6">
+    <div class="card-body">
+        <h3 class="card-title text-lg">
+            {{if .Task}}Edit Task{{else}}Add New Task{{end}}
+        </h3>
+        
+        <form 
+            {{if .Task}}
+                action="/tasks/{{.Task.ID}}" 
+                hx-put="/api/tasks/{{.Task.ID}}"
+            {{else}}
+                action="/tasks" 
+                hx-post="/tasks"
+            {{end}}
+            hx-target="#tasks-container" 
+            hx-swap="beforeend"
+            class="space-y-4"
+        >
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Title</span>
+                </label>
+                <input 
+                    type="text" 
+                    name="title" 
+                    placeholder="Task title" 
+                    class="input input-bordered" 
+                    required
+                    {{if .Task}}value="{{.Task.Title}}"{{end}}
+                >
+            </div>
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Description</span>
+                </label>
+                <textarea 
+                    name="description" 
+                    placeholder="Task description" 
+                    class="textarea textarea-bordered h-24"
+                >{{if .Task}}{{.Task.Description}}{{end}}</textarea>
+            </div>
+            
+            <div class="form-control" x-data="{ contexts: [] }">
+                <label class="label">
+                    <span class="label-text">Contexts</span>
+                </label>
+                <div class="flex space-x-2">
+                    <select class="select select-bordered w-full" x-model="newContext">
+                        <option value="">Select a context...</option>
+                        <option value="home">Home</option>
+                        <option value="work">Work</option>
+                        <option value="online">Online</option>
+                        <option value="phone">Phone</option>
+                        <option value="errand">Errand</option>
+                    </select>
+                    <button type="button" class="btn" @click="contexts.push(newContext); newContext = ''">Add</button>
+                </div>
+                <div class="flex flex-wrap gap-2 mt-2">
+                    <template x-for="(context, index) in contexts" :key="index">
+                        <div class="badge badge-primary gap-2">
+                            <input type="hidden" name="contexts[]" x-bind:value="context">
+                            <span x-text="context"></span>
+                            <button type="button" @click="contexts.splice(index, 1)" class="btn btn-xs btn-circle btn-ghost">×</button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            
+            <div class="form-control mt-6">
+                <button type="submit" class="btn btn-primary">
+                    {{if .Task}}Update{{else}}Create{{end}} Task
+                </button>
+                <button type="button" class="btn btn-outline mt-2" 
+                        hx-get="/tasks" 
+                        hx-target="#task-form-container" 
+                        hx-swap="innerHTML">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

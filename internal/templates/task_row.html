@@ -1,0 +1,30 @@
+<tr id="task-{{.ID}}">
+    <td>
+        <div class="font-bold">{{.Title}}</div>
+        <div class="text-sm opacity-50 truncate max-w-xs">{{.Description}}</div>
+    </td>
+    <td>
+        <div class="badge badge-outline">{{.Status}}</div>
+    </td>
+    <td>{{.CreatedAt.Format "Jan 02, 2006"}}</td>
+    <td>
+        <div class="btn-group">
+            <a href="/tasks/{{.ID}}" class="btn btn-xs btn-outline">
+                View
+            </a>
+            <button class="btn btn-xs btn-outline" 
+                    hx-get="/tasks/{{.ID}}/edit" 
+                    hx-target="#task-form-container" 
+                    hx-swap="innerHTML">
+                Edit
+            </button>
+            <button class="btn btn-xs btn-outline btn-error" 
+                    hx-delete="/api/tasks/{{.ID}}" 
+                    hx-target="#task-{{.ID}}" 
+                    hx-swap="outerHTML"
+                    hx-confirm="Are you sure you want to delete this task?">
+                Delete
+            </button>
+        </div>
+    </td>
+</tr>
