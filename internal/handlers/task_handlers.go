@@ -12,20 +12,20 @@ import (
 
 // TaskHandler manages task-related HTTP endpoints
 type TaskHandler struct {
-	store models.TaskStore
-	tmpl  *template.Template
+	store     models.TaskStore
+	templates *TemplateRenderer
 }
 
 // NewTaskHandler creates a new task handler
 func NewTaskHandler(store models.TaskStore, templatesDir string) (*TaskHandler, error) {
-	tmpl, err := template.ParseGlob(filepath.Join(templatesDir, "*.html"))
+	templates, err := NewTemplateRenderer(templatesDir)
 	if err != nil {
 		return nil, err
 	}
 
 	return &TaskHandler{
-		store: store,
-		tmpl:  tmpl,
+		store:     store,
+		templates: templates,
 	}, nil
 }
 
@@ -152,25 +152,58 @@ func (h *TaskHandler) DeleteTaskAPI(w http.ResponseWriter, r *http.Request) {
 
 // ListTasksPage renders the tasks list page
 func (h *TaskHandler) ListTasksPage(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.store.GetAll()
+	// Get status filter if provided
+	status := r.URL.Query().Get("status")
+	
+	var tasks []*models.Task
+	var err error
+	var title string
+	
+	if status != "" {
+		// Filter tasks by status
+		tasks, err = h.store.GetByStatus(models.TaskStatus(status))
+		
+		// Set title based on status
+		switch status {
+		case "inbox":
+			title = "Inbox"
+		case "next":
+			title = "Next Actions"
+		case "waiting":
+			title = "Waiting For"
+		case "someday":
+			title = "Someday/Maybe"
+		case "done":
+			title = "Completed Tasks"
+		case "project":
+			title = "Projects"
+		default:
+			title = "Tasks - " + status
+		}
+	} else {
+		// Get all tasks
+		tasks, err = h.store.GetAll()
+		title = "All Tasks"
+	}
+	
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	data := map[string]interface{}{
-		"Title": "All Tasks",
+		"Title": title,
 		"Tasks": tasks,
 	}
 
 	w.Header().Set("Content-Type", "text/html")
-	h.tmpl.ExecuteTemplate(w, "tasks.html", data)
+	h.templates.templates.ExecuteTemplate(w, "base.html", data)
 }
 
 // NewTaskForm renders the form to create a new task
 func (h *TaskHandler) NewTaskForm(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	h.tmpl.ExecuteTemplate(w, "task_form.html", nil)
+	h.templates.templates.ExecuteTemplate(w, "task_form", nil)
 }
 
 // CreateTaskSubmit processes a task creation form submission
@@ -184,6 +217,12 @@ func (h *TaskHandler) CreateTaskSubmit(w http.ResponseWriter, r *http.Request) {
 	description := r.FormValue("description")
 
 	task := models.NewTask(title, description)
+	
+	// Handle contexts
+	for _, ctx := range r.Form["contexts[]"] {
+		task.Contexts = append(task.Contexts, models.Context(ctx))
+	}
+	
 	if err := h.store.Save(task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -192,7 +231,7 @@ func (h *TaskHandler) CreateTaskSubmit(w http.ResponseWriter, r *http.Request) {
 	// If this is an HTMX request, return a partial HTML response
 	if r.Header.Get("HX-Request") == "true" {
 		w.Header().Set("Content-Type", "text/html")
-		h.tmpl.ExecuteTemplate(w, "task_row.html", task)
+		h.templates.templates.ExecuteTemplate(w, "task_row", task)
 		return
 	}
 
@@ -215,7 +254,7 @@ func (h *TaskHandler) ViewTaskPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html")
-	h.tmpl.ExecuteTemplate(w, "task_view.html", data)
+	h.templates.templates.ExecuteTemplate(w, "base.html", data)
 }
 
 // EditTaskForm renders the form to edit a task
@@ -233,5 +272,5 @@ func (h *TaskHandler) EditTaskForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html")
-	h.tmpl.ExecuteTemplate(w, "task_form.html", data)
+	h.templates.templates.ExecuteTemplate(w, "task_form", data)
 }

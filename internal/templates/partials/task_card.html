@@ -1,0 +1,32 @@
+{{ define "task_card" }}
+<div class="card bg-base-100 shadow-md my-2">
+    <div class="card-body p-4">
+        <div class="flex justify-between items-center">
+            <h3 class="card-title">{{ .Title }}</h3>
+            <div class="badge badge-{{ taskStatusBadge .Status }}">{{ .Status }}</div>
+        </div>
+        
+        <p class="text-sm my-2">{{ .Description }}</p>
+        
+        <div class="flex flex-wrap gap-1 mt-1">
+            {{ range .Contexts }}
+            <div class="badge badge-primary badge-sm">{{ . }}</div>
+            {{ end }}
+            
+            {{ range .Tags }}
+            <div class="badge badge-secondary badge-sm">{{ . }}</div>
+            {{ end }}
+        </div>
+        
+        <div class="text-xs text-gray-500 mt-2">Created: {{ formatTime .CreatedAt }}</div>
+        
+        <div class="card-actions justify-end mt-2">
+            <a href="/tasks/{{ .ID }}" class="btn btn-xs btn-outline">View</a>
+            <button class="btn btn-xs btn-outline" 
+                    hx-get="/tasks/{{ .ID }}/edit" 
+                    hx-target="#task-form-container" 
+                    hx-swap="innerHTML">Edit</button>
+        </div>
+    </div>
+</div>
+{{ end }}

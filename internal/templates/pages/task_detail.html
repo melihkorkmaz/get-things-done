@@ -1,0 +1,170 @@
+{{ define "title" }}{{ .Task.Title }} - GTD App{{ end }}
+
+{{ define "content" }}
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="card-title text-2xl">{{ .Task.Title }}</h2>
+            <div class="flex space-x-2">
+                <a href="/tasks" class="btn btn-outline">
+                    Back to Tasks
+                </a>
+                <button class="btn btn-primary"
+                        hx-get="/tasks/{{ .Task.ID }}/edit"
+                        hx-target="#task-details"
+                        hx-swap="outerHTML">
+                    Edit Task
+                </button>
+            </div>
+        </div>
+        
+        <div id="task-details" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h3 class="font-bold text-lg">Details</h3>
+                    <div class="divider my-1"></div>
+                    
+                    <div class="flex flex-col space-y-2">
+                        <div>
+                            <span class="font-semibold">Status:</span>
+                            <div class="badge badge-{{ taskStatusBadge .Task.Status }}">{{ .Task.Status }}</div>
+                        </div>
+                        
+                        <div>
+                            <span class="font-semibold">Created:</span>
+                            <span>{{ formatTime .Task.CreatedAt }}</span>
+                        </div>
+                        
+                        {{ if .Task.CompletedAt }}
+                        <div>
+                            <span class="font-semibold">Completed:</span>
+                            <span>{{ formatTime .Task.CompletedAt }}</span>
+                        </div>
+                        {{ end }}
+                        
+                        {{ if .Task.DueDate }}
+                        <div>
+                            <span class="font-semibold">Due:</span>
+                            <span>{{ formatDate .Task.DueDate }}</span>
+                        </div>
+                        {{ end }}
+                        
+                        {{ if .Task.ScheduledDate }}
+                        <div>
+                            <span class="font-semibold">Scheduled:</span>
+                            <span>{{ formatDate .Task.ScheduledDate }}</span>
+                        </div>
+                        {{ end }}
+                        
+                        {{ if .Task.Contexts }}
+                        <div>
+                            <span class="font-semibold">Contexts:</span>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                {{ range .Task.Contexts }}
+                                <div class="badge badge-primary">{{ . }}</div>
+                                {{ end }}
+                            </div>
+                        </div>
+                        {{ end }}
+                        
+                        {{ if .Task.Tags }}
+                        <div>
+                            <span class="font-semibold">Tags:</span>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                {{ range .Task.Tags }}
+                                <div class="badge badge-secondary">{{ . }}</div>
+                                {{ end }}
+                            </div>
+                        </div>
+                        {{ end }}
+                        
+                        {{ if .Task.TimeEstimate }}
+                        <div>
+                            <span class="font-semibold">Time Estimate:</span>
+                            <span>{{ .Task.TimeEstimate }} minutes</span>
+                        </div>
+                        {{ end }}
+                        
+                        {{ if .Task.EnergyRequired }}
+                        <div>
+                            <span class="font-semibold">Energy Level:</span>
+                            <span>{{ .Task.EnergyRequired }}</span>
+                        </div>
+                        {{ end }}
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="font-bold text-lg">Description</h3>
+                    <div class="divider my-1"></div>
+                    <div class="prose">
+                        <p>{{ .Task.Description }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="flex justify-between">
+                <div>
+                    {{ if eq .Task.Status "inbox" }}
+                    <div class="dropdown">
+                        <label tabindex="0" class="btn m-1">Process Task</label>
+                        <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                            <li>
+                                <button hx-put="/api/tasks/{{ .Task.ID }}/next"
+                                       hx-headers='{"Content-Type": "application/json"}'
+                                       hx-swap="none"
+                                       hx-trigger="click">
+                                    Mark as Next Action
+                                </button>
+                            </li>
+                            <li>
+                                <button hx-put="/api/tasks/{{ .Task.ID }}/waiting"
+                                       hx-headers='{"Content-Type": "application/json"}'
+                                       hx-swap="none"
+                                       hx-trigger="click">
+                                    Mark as Waiting For
+                                </button>
+                            </li>
+                            <li>
+                                <button hx-put="/api/tasks/{{ .Task.ID }}/someday"
+                                       hx-headers='{"Content-Type": "application/json"}'
+                                       hx-swap="none" 
+                                       hx-trigger="click">
+                                    Mark as Someday/Maybe
+                                </button>
+                            </li>
+                            <li>
+                                <button hx-put="/api/tasks/{{ .Task.ID }}/project"
+                                       hx-headers='{"Content-Type": "application/json"}'
+                                       hx-swap="none"
+                                       hx-trigger="click">
+                                    Convert to Project
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    {{ else if ne .Task.Status "done" }}
+                    <button class="btn btn-success"
+                            hx-put="/api/tasks/{{ .Task.ID }}/done"
+                            hx-headers='{"Content-Type": "application/json"}'
+                            hx-swap="none"
+                            hx-trigger="click">
+                        Mark as Done
+                    </button>
+                    {{ end }}
+                </div>
+                
+                <button class="btn btn-outline btn-error"
+                        hx-delete="/api/tasks/{{ .Task.ID }}"
+                        hx-target="body"
+                        hx-push-url="/tasks"
+                        hx-confirm="Are you sure you want to delete this task?">
+                    Delete Task
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{{ end }}

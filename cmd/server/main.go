@@ -89,10 +89,14 @@ func main() {
 	taskHandler.RegisterRoutes(r)
 	taskHandler.RegisterTaskStatusRoutes(r)
 
+	// Initialize index handler
+	indexHandler, err := handlers.NewIndexHandler(taskStore, templatesDir)
+	if err != nil {
+		log.Fatalf("Failed to create index handler: %v", err)
+	}
+	
 	// Home page
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/tasks", http.StatusSeeOther)
-	})
+	r.Get("/", indexHandler.HomePage)
 	
 	// API routes for hello example (from original setup)
 	r.Route("/api", func(r chi.Router) {
