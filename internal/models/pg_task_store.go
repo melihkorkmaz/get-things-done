@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -52,6 +53,7 @@ func (s *PgTaskStore) initSchema() error {
 			title TEXT NOT NULL,
 			description TEXT,
 			status TEXT NOT NULL,
+			user_id TEXT,
 			project_id TEXT,
 			parent_id TEXT,
 			contexts JSONB,
@@ -72,6 +74,7 @@ func (s *PgTaskStore) initSchema() error {
 		
 		CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 		CREATE INDEX IF NOT EXISTS idx_tasks_deleted_at ON tasks(deleted_at);
+		CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
 	`)
 
 	return err
@@ -88,7 +91,7 @@ func (s *PgTaskStore) Close() {
 func (s *PgTaskStore) Get(id string) (*Task, error) {
 	query := `
 		SELECT 
-			id, title, description, status, project_id, parent_id, 
+			id, title, description, status, user_id, project_id, parent_id, 
 			contexts, tags, due_date, scheduled_date, time_estimate, 
 			energy_required, priority, timeframe, is_recurring, 
 			recurring_rule, created_at, updated_at, completed_at, deleted_at
@@ -98,14 +101,44 @@ func (s *PgTaskStore) Get(id string) (*Task, error) {
 
 	var task Task
 	var contextsJSON, tagsJSON []byte
+	var projectID, parentID, energyRequired, timeframe sql.NullString
 	var dueDate, scheduledDate, completedAt, deletedAt pgtype.Timestamptz
+	var timeEstimate, priority sql.NullInt32
+	var isRecurring sql.NullBool
+	var recurringRule sql.NullString
 
 	err := s.db.QueryRow(context.Background(), query, id).Scan(
-		&task.ID, &task.Title, &task.Description, &task.Status, &task.ProjectID, &task.ParentID,
-		&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &task.TimeEstimate,
-		&task.EnergyRequired, &task.Priority, &task.Timeframe, &task.IsRecurring,
-		&task.RecurringRule, &task.CreatedAt, &task.UpdatedAt, &completedAt, &deletedAt,
+		&task.ID, &task.Title, &task.Description, &task.Status, &task.UserID, &projectID, &parentID,
+		&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &timeEstimate,
+		&energyRequired, &priority, &timeframe, &isRecurring,
+		&recurringRule, &task.CreatedAt, &task.UpdatedAt, &completedAt, &deletedAt,
 	)
+	
+	// Handle nullable string fields
+	if projectID.Valid {
+		task.ProjectID = projectID.String
+	}
+	if parentID.Valid {
+		task.ParentID = parentID.String
+	}
+	if energyRequired.Valid {
+		task.EnergyRequired = energyRequired.String
+	}
+	if timeframe.Valid {
+		task.Timeframe = Timeframe(timeframe.String)
+	}
+	if timeEstimate.Valid {
+		task.TimeEstimate = int(timeEstimate.Int32)
+	}
+	if priority.Valid {
+		task.Priority = int(priority.Int32)
+	}
+	if isRecurring.Valid {
+		task.IsRecurring = isRecurring.Bool
+	}
+	if recurringRule.Valid {
+		task.RecurringRule = recurringRule.String
+	}
 
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -156,7 +189,7 @@ func (s *PgTaskStore) Get(id string) (*Task, error) {
 func (s *PgTaskStore) GetAll() ([]*Task, error) {
 	query := `
 		SELECT 
-			id, title, description, status, project_id, parent_id, 
+			id, title, description, status, user_id, project_id, parent_id, 
 			contexts, tags, due_date, scheduled_date, time_estimate, 
 			energy_required, priority, timeframe, is_recurring, 
 			recurring_rule, created_at, updated_at, completed_at, deleted_at
@@ -175,16 +208,156 @@ func (s *PgTaskStore) GetAll() ([]*Task, error) {
 	for rows.Next() {
 		var task Task
 		var contextsJSON, tagsJSON []byte
+		var projectID, parentID, energyRequired, timeframe sql.NullString
 		var dueDate, scheduledDate, completedAt, deletedAt pgtype.Timestamptz
+		var timeEstimate, priority sql.NullInt32
+		var isRecurring sql.NullBool
+		var recurringRule sql.NullString
 
 		err := rows.Scan(
-			&task.ID, &task.Title, &task.Description, &task.Status, &task.ProjectID, &task.ParentID,
-			&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &task.TimeEstimate,
-			&task.EnergyRequired, &task.Priority, &task.Timeframe, &task.IsRecurring,
-			&task.RecurringRule, &task.CreatedAt, &task.UpdatedAt, &completedAt, &deletedAt,
+			&task.ID, &task.Title, &task.Description, &task.Status, &task.UserID, &projectID, &parentID,
+			&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &timeEstimate,
+			&energyRequired, &priority, &timeframe, &isRecurring,
+			&recurringRule, &task.CreatedAt, &task.UpdatedAt, &completedAt, &deletedAt,
 		)
 		if err != nil {
 			return nil, err
+		}
+		
+		// Handle nullable string fields
+		if projectID.Valid {
+			task.ProjectID = projectID.String
+		}
+		if parentID.Valid {
+			task.ParentID = parentID.String
+		}
+		if energyRequired.Valid {
+			task.EnergyRequired = energyRequired.String
+		}
+		if timeframe.Valid {
+			task.Timeframe = Timeframe(timeframe.String)
+		}
+		if timeEstimate.Valid {
+			task.TimeEstimate = int(timeEstimate.Int32)
+		}
+		if priority.Valid {
+			task.Priority = int(priority.Int32)
+		}
+		if isRecurring.Valid {
+			task.IsRecurring = isRecurring.Bool
+		}
+		if recurringRule.Valid {
+			task.RecurringRule = recurringRule.String
+		}
+
+		// Convert JSON fields back to Go structures
+		if contextsJSON != nil {
+			var contexts []string
+			if err := json.Unmarshal(contextsJSON, &contexts); err == nil {
+				for _, c := range contexts {
+					task.Contexts = append(task.Contexts, Context(c))
+				}
+			}
+		}
+
+		if tagsJSON != nil {
+			if err := json.Unmarshal(tagsJSON, &task.Tags); err != nil {
+				// Log the error but continue
+				fmt.Printf("Error unmarshaling tags: %v\n", err)
+			}
+		}
+
+		// Handle nullable time.Time fields
+		if dueDate.Valid {
+			t := dueDate.Time.Local()
+			task.DueDate = &t
+		}
+		if scheduledDate.Valid {
+			t := scheduledDate.Time.Local()
+			task.ScheduledDate = &t
+		}
+		if completedAt.Valid {
+			t := completedAt.Time.Local()
+			task.CompletedAt = &t
+		}
+		if deletedAt.Valid {
+			t := deletedAt.Time.Local()
+			task.DeletedAt = &t
+		}
+
+		tasks = append(tasks, &task)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+// GetAllByUserID returns all non-deleted tasks for a specific user
+func (s *PgTaskStore) GetAllByUserID(userID string) ([]*Task, error) {
+	query := `
+		SELECT 
+			id, title, description, status, user_id, project_id, parent_id, 
+			contexts, tags, due_date, scheduled_date, time_estimate, 
+			energy_required, priority, timeframe, is_recurring, 
+			recurring_rule, created_at, updated_at, completed_at, deleted_at
+		FROM tasks
+		WHERE deleted_at IS NULL AND user_id = $1
+		ORDER BY created_at DESC
+	`
+
+	rows, err := s.db.Query(context.Background(), query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []*Task
+	for rows.Next() {
+		var task Task
+		var contextsJSON, tagsJSON []byte
+		var projectID, parentID, energyRequired, timeframe sql.NullString
+		var dueDate, scheduledDate, completedAt, deletedAt pgtype.Timestamptz
+		var timeEstimate, priority sql.NullInt32
+		var isRecurring sql.NullBool
+		var recurringRule sql.NullString
+
+		err := rows.Scan(
+			&task.ID, &task.Title, &task.Description, &task.Status, &task.UserID, &projectID, &parentID,
+			&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &timeEstimate,
+			&energyRequired, &priority, &timeframe, &isRecurring,
+			&recurringRule, &task.CreatedAt, &task.UpdatedAt, &completedAt, &deletedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		
+		// Handle nullable string fields
+		if projectID.Valid {
+			task.ProjectID = projectID.String
+		}
+		if parentID.Valid {
+			task.ParentID = parentID.String
+		}
+		if energyRequired.Valid {
+			task.EnergyRequired = energyRequired.String
+		}
+		if timeframe.Valid {
+			task.Timeframe = Timeframe(timeframe.String)
+		}
+		if timeEstimate.Valid {
+			task.TimeEstimate = int(timeEstimate.Int32)
+		}
+		if priority.Valid {
+			task.Priority = int(priority.Int32)
+		}
+		if isRecurring.Valid {
+			task.IsRecurring = isRecurring.Bool
+		}
+		if recurringRule.Valid {
+			task.RecurringRule = recurringRule.String
 		}
 
 		// Convert JSON fields back to Go structures
@@ -236,7 +409,7 @@ func (s *PgTaskStore) GetAll() ([]*Task, error) {
 func (s *PgTaskStore) GetByStatus(status TaskStatus) ([]*Task, error) {
 	query := `
 		SELECT 
-			id, title, description, status, project_id, parent_id, 
+			id, title, description, status, user_id, project_id, parent_id, 
 			contexts, tags, due_date, scheduled_date, time_estimate, 
 			energy_required, priority, timeframe, is_recurring, 
 			recurring_rule, created_at, updated_at, completed_at, deleted_at
@@ -255,16 +428,155 @@ func (s *PgTaskStore) GetByStatus(status TaskStatus) ([]*Task, error) {
 	for rows.Next() {
 		var task Task
 		var contextsJSON, tagsJSON []byte
+		var projectID, parentID, energyRequired, timeframe sql.NullString
 		var dueDate, scheduledDate, completedAt, deletedAt pgtype.Timestamptz
+		var timeEstimate, priority sql.NullInt32
+		var isRecurring sql.NullBool
+		var recurringRule sql.NullString
 
 		err := rows.Scan(
-			&task.ID, &task.Title, &task.Description, &task.Status, &task.ProjectID, &task.ParentID,
-			&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &task.TimeEstimate,
-			&task.EnergyRequired, &task.Priority, &task.Timeframe, &task.IsRecurring,
-			&task.RecurringRule, &task.CreatedAt, &task.UpdatedAt, &completedAt, &deletedAt,
+			&task.ID, &task.Title, &task.Description, &task.Status, &task.UserID, &projectID, &parentID,
+			&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &timeEstimate,
+			&energyRequired, &priority, &timeframe, &isRecurring,
+			&recurringRule, &task.CreatedAt, &task.UpdatedAt, &completedAt, &deletedAt,
 		)
 		if err != nil {
 			return nil, err
+		}
+		
+		// Handle nullable string fields
+		if projectID.Valid {
+			task.ProjectID = projectID.String
+		}
+		if parentID.Valid {
+			task.ParentID = parentID.String
+		}
+		if energyRequired.Valid {
+			task.EnergyRequired = energyRequired.String
+		}
+		if timeframe.Valid {
+			task.Timeframe = Timeframe(timeframe.String)
+		}
+		if timeEstimate.Valid {
+			task.TimeEstimate = int(timeEstimate.Int32)
+		}
+		if priority.Valid {
+			task.Priority = int(priority.Int32)
+		}
+		if isRecurring.Valid {
+			task.IsRecurring = isRecurring.Bool
+		}
+		if recurringRule.Valid {
+			task.RecurringRule = recurringRule.String
+		}
+
+		// Convert JSON fields back to Go structures
+		if contextsJSON != nil {
+			var contexts []string
+			if err := json.Unmarshal(contextsJSON, &contexts); err == nil {
+				for _, c := range contexts {
+					task.Contexts = append(task.Contexts, Context(c))
+				}
+			}
+		}
+
+		if tagsJSON != nil {
+			if err := json.Unmarshal(tagsJSON, &task.Tags); err != nil {
+				fmt.Printf("Error unmarshaling tags: %v\n", err)
+			}
+		}
+
+		// Handle nullable time.Time fields
+		if dueDate.Valid {
+			t := dueDate.Time.Local()
+			task.DueDate = &t
+		}
+		if scheduledDate.Valid {
+			t := scheduledDate.Time.Local()
+			task.ScheduledDate = &t
+		}
+		if completedAt.Valid {
+			t := completedAt.Time.Local()
+			task.CompletedAt = &t
+		}
+		if deletedAt.Valid {
+			t := deletedAt.Time.Local()
+			task.DeletedAt = &t
+		}
+
+		tasks = append(tasks, &task)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+// GetByStatusAndUserID returns all tasks with the specified status for a specific user
+func (s *PgTaskStore) GetByStatusAndUserID(status TaskStatus, userID string) ([]*Task, error) {
+	query := `
+		SELECT 
+			id, title, description, status, user_id, project_id, parent_id, 
+			contexts, tags, due_date, scheduled_date, time_estimate, 
+			energy_required, priority, timeframe, is_recurring, 
+			recurring_rule, created_at, updated_at, completed_at, deleted_at
+		FROM tasks
+		WHERE status = $1 AND user_id = $2 AND deleted_at IS NULL
+		ORDER BY created_at DESC
+	`
+
+	rows, err := s.db.Query(context.Background(), query, string(status), userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []*Task
+	for rows.Next() {
+		var task Task
+		var contextsJSON, tagsJSON []byte
+		var projectID, parentID, energyRequired, timeframe sql.NullString
+		var dueDate, scheduledDate, completedAt, deletedAt pgtype.Timestamptz
+		var timeEstimate, priority sql.NullInt32
+		var isRecurring sql.NullBool
+		var recurringRule sql.NullString
+
+		err := rows.Scan(
+			&task.ID, &task.Title, &task.Description, &task.Status, &task.UserID, &projectID, &parentID,
+			&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &timeEstimate,
+			&energyRequired, &priority, &timeframe, &isRecurring,
+			&recurringRule, &task.CreatedAt, &task.UpdatedAt, &completedAt, &deletedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		
+		// Handle nullable string fields
+		if projectID.Valid {
+			task.ProjectID = projectID.String
+		}
+		if parentID.Valid {
+			task.ParentID = parentID.String
+		}
+		if energyRequired.Valid {
+			task.EnergyRequired = energyRequired.String
+		}
+		if timeframe.Valid {
+			task.Timeframe = Timeframe(timeframe.String)
+		}
+		if timeEstimate.Valid {
+			task.TimeEstimate = int(timeEstimate.Int32)
+		}
+		if priority.Valid {
+			task.Priority = int(priority.Int32)
+		}
+		if isRecurring.Valid {
+			task.IsRecurring = isRecurring.Bool
+		}
+		if recurringRule.Valid {
+			task.RecurringRule = recurringRule.String
 		}
 
 		// Convert JSON fields back to Go structures
@@ -338,16 +650,17 @@ func (s *PgTaskStore) Save(task *Task) error {
 
 	query := `
 		INSERT INTO tasks (
-			id, title, description, status, project_id, parent_id, 
+			id, title, description, status, user_id, project_id, parent_id, 
 			contexts, tags, due_date, scheduled_date, time_estimate, 
 			energy_required, priority, timeframe, is_recurring, 
 			recurring_rule, created_at, updated_at, completed_at, deleted_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
 		) ON CONFLICT (id) DO UPDATE SET
 			title = EXCLUDED.title,
 			description = EXCLUDED.description,
 			status = EXCLUDED.status,
+			user_id = EXCLUDED.user_id,
 			project_id = EXCLUDED.project_id,
 			parent_id = EXCLUDED.parent_id,
 			contexts = EXCLUDED.contexts,
@@ -366,7 +679,7 @@ func (s *PgTaskStore) Save(task *Task) error {
 	`
 
 	_, err = s.db.Exec(context.Background(), query,
-		task.ID, task.Title, task.Description, string(task.Status), task.ProjectID, task.ParentID,
+		task.ID, task.Title, task.Description, string(task.Status), task.UserID, task.ProjectID, task.ParentID,
 		contextsJSON, tagsJSON, task.DueDate, task.ScheduledDate, task.TimeEstimate,
 		task.EnergyRequired, task.Priority, string(task.Timeframe), task.IsRecurring,
 		task.RecurringRule, task.CreatedAt, task.UpdatedAt, task.CompletedAt, task.DeletedAt,
@@ -393,7 +706,7 @@ func (s *PgTaskStore) Search(query string) ([]*Task, error) {
 	// Build a query that searches in multiple columns with case-insensitive matching
 	sqlQuery := `
 		SELECT 
-			id, title, description, status, project_id, parent_id, 
+			id, title, description, status, user_id, project_id, parent_id, 
 			contexts, tags, due_date, scheduled_date, time_estimate, 
 			energy_required, priority, timeframe, is_recurring, 
 			recurring_rule, created_at, updated_at, completed_at, deleted_at
@@ -420,16 +733,164 @@ func (s *PgTaskStore) Search(query string) ([]*Task, error) {
 	for rows.Next() {
 		var task Task
 		var contextsJSON, tagsJSON []byte
+		var projectID, parentID, energyRequired, timeframe sql.NullString
 		var dueDate, scheduledDate, completedAt, deletedAt pgtype.Timestamptz
+		var timeEstimate, priority sql.NullInt32
+		var isRecurring sql.NullBool
+		var recurringRule sql.NullString
 
 		err := rows.Scan(
-			&task.ID, &task.Title, &task.Description, &task.Status, &task.ProjectID, &task.ParentID,
-			&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &task.TimeEstimate,
-			&task.EnergyRequired, &task.Priority, &task.Timeframe, &task.IsRecurring,
-			&task.RecurringRule, &task.CreatedAt, &task.UpdatedAt, &completedAt, &deletedAt,
+			&task.ID, &task.Title, &task.Description, &task.Status, &task.UserID, &projectID, &parentID,
+			&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &timeEstimate,
+			&energyRequired, &priority, &timeframe, &isRecurring,
+			&recurringRule, &task.CreatedAt, &task.UpdatedAt, &completedAt, &deletedAt,
 		)
 		if err != nil {
 			return nil, err
+		}
+		
+		// Handle nullable string fields
+		if projectID.Valid {
+			task.ProjectID = projectID.String
+		}
+		if parentID.Valid {
+			task.ParentID = parentID.String
+		}
+		if energyRequired.Valid {
+			task.EnergyRequired = energyRequired.String
+		}
+		if timeframe.Valid {
+			task.Timeframe = Timeframe(timeframe.String)
+		}
+		if timeEstimate.Valid {
+			task.TimeEstimate = int(timeEstimate.Int32)
+		}
+		if priority.Valid {
+			task.Priority = int(priority.Int32)
+		}
+		if isRecurring.Valid {
+			task.IsRecurring = isRecurring.Bool
+		}
+		if recurringRule.Valid {
+			task.RecurringRule = recurringRule.String
+		}
+
+		// Convert JSON fields back to Go structures
+		if contextsJSON != nil {
+			var contexts []string
+			if err := json.Unmarshal(contextsJSON, &contexts); err == nil {
+				for _, c := range contexts {
+					task.Contexts = append(task.Contexts, Context(c))
+				}
+			}
+		}
+
+		if tagsJSON != nil {
+			if err := json.Unmarshal(tagsJSON, &task.Tags); err != nil {
+				fmt.Printf("Error unmarshaling tags: %v\n", err)
+			}
+		}
+
+		// Handle nullable time.Time fields
+		if dueDate.Valid {
+			t := dueDate.Time.Local()
+			task.DueDate = &t
+		}
+		if scheduledDate.Valid {
+			t := scheduledDate.Time.Local()
+			task.ScheduledDate = &t
+		}
+		if completedAt.Valid {
+			t := completedAt.Time.Local()
+			task.CompletedAt = &t
+		}
+		if deletedAt.Valid {
+			t := deletedAt.Time.Local()
+			task.DeletedAt = &t
+		}
+
+		tasks = append(tasks, &task)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+// SearchByUserID finds tasks for a specific user that match the query in title, description, contexts, or tags
+func (s *PgTaskStore) SearchByUserID(query string, userID string) ([]*Task, error) {
+	// Build a query that searches in multiple columns with case-insensitive matching
+	sqlQuery := `
+		SELECT 
+			id, title, description, status, user_id, project_id, parent_id, 
+			contexts, tags, due_date, scheduled_date, time_estimate, 
+			energy_required, priority, timeframe, is_recurring, 
+			recurring_rule, created_at, updated_at, completed_at, deleted_at
+		FROM tasks
+		WHERE deleted_at IS NULL AND user_id = $2 AND (
+			LOWER(title) LIKE LOWER($1) OR 
+			LOWER(description) LIKE LOWER($1) OR
+			contexts::text ILIKE $1 OR
+			tags::text ILIKE $1
+		)
+		ORDER BY created_at DESC
+	`
+
+	// Add wildcards for partial matching
+	searchPattern := "%" + query + "%"
+
+	rows, err := s.db.Query(context.Background(), sqlQuery, searchPattern, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []*Task
+	for rows.Next() {
+		var task Task
+		var contextsJSON, tagsJSON []byte
+		var projectID, parentID, energyRequired, timeframe sql.NullString
+		var dueDate, scheduledDate, completedAt, deletedAt pgtype.Timestamptz
+		var timeEstimate, priority sql.NullInt32
+		var isRecurring sql.NullBool
+		var recurringRule sql.NullString
+
+		err := rows.Scan(
+			&task.ID, &task.Title, &task.Description, &task.Status, &task.UserID, &projectID, &parentID,
+			&contextsJSON, &tagsJSON, &dueDate, &scheduledDate, &timeEstimate,
+			&energyRequired, &priority, &timeframe, &isRecurring,
+			&recurringRule, &task.CreatedAt, &task.UpdatedAt, &completedAt, &deletedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		
+		// Handle nullable string fields
+		if projectID.Valid {
+			task.ProjectID = projectID.String
+		}
+		if parentID.Valid {
+			task.ParentID = parentID.String
+		}
+		if energyRequired.Valid {
+			task.EnergyRequired = energyRequired.String
+		}
+		if timeframe.Valid {
+			task.Timeframe = Timeframe(timeframe.String)
+		}
+		if timeEstimate.Valid {
+			task.TimeEstimate = int(timeEstimate.Int32)
+		}
+		if priority.Valid {
+			task.Priority = int(priority.Int32)
+		}
+		if isRecurring.Valid {
+			task.IsRecurring = isRecurring.Bool
+		}
+		if recurringRule.Valid {
+			task.RecurringRule = recurringRule.String
 		}
 
 		// Convert JSON fields back to Go structures

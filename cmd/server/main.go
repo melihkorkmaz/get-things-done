@@ -15,6 +15,7 @@ import (
 	"github.com/melihkorkmaz/gtd/internal/config"
 	"github.com/melihkorkmaz/gtd/internal/handlers"
 	"github.com/melihkorkmaz/gtd/internal/models"
+	"github.com/melihkorkmaz/gtd/internal/views/pages"
 )
 
 func main() {
@@ -30,8 +31,9 @@ func main() {
 		port = "3000"
 	}
 
-	// Initialize the task store (PostgreSQL or in-memory)
+	// Initialize the task store and user store (PostgreSQL or in-memory)
 	var taskStore models.TaskStore
+	var userStore models.UserStore
 	var err error
 
 	// Check if we should use PostgreSQL
@@ -49,18 +51,27 @@ func main() {
 
 		log.Printf("Connecting to PostgreSQL database: %s/%s", dbConfig.Host, dbConfig.DBName)
 
-		pgStore, err := models.NewPgTaskStore(dbConnString)
+		// Initialize task store
+		pgTaskStore, err := models.NewPgTaskStore(dbConnString)
 		if err != nil {
-			log.Fatalf("Failed to connect to PostgreSQL: %v", err)
+			log.Fatalf("Failed to connect to PostgreSQL for tasks: %v", err)
 		}
-		defer pgStore.Close()
+		defer pgTaskStore.Close()
+		taskStore = pgTaskStore
 
-		taskStore = pgStore
-		log.Println("Using PostgreSQL database for task storage")
+		// Initialize user store
+		pgUserStore, err := models.NewPgUserStore(dbConnString)
+		if err != nil {
+			log.Fatalf("Failed to connect to PostgreSQL for users: %v", err)
+		}
+		userStore = pgUserStore
+
+		log.Println("Using PostgreSQL database for task and user storage")
 	} else {
 		// Use in-memory store
 		taskStore = models.NewMemoryTaskStore()
-		log.Println("Using in-memory storage for tasks (data will be lost when server stops)")
+		userStore = models.NewMemoryUserStore()
+		log.Println("Using in-memory storage (data will be lost when server stops)")
 
 		// Create some sample tasks for testing (only for in-memory store)
 		createSampleTasks(taskStore)
@@ -71,6 +82,16 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(30 * time.Second))
+	
+	// Initialize auth service
+	authConfig := config.NewAuthConfigFromEnv()
+	authService := models.NewAuthService(userStore, authConfig.JWTSecret, authConfig.TokenExpiry)
+	
+	// Initialize auth handler
+	authHandler := handlers.NewAuthHandler(authService, authConfig)
+	
+	// Apply authentication middleware to all routes
+	r.Use(authHandler.AuthMiddleware)
 
 	// Serve static files
 	workDir, _ := os.Getwd()
@@ -86,18 +107,11 @@ func main() {
 		log.Fatalf("Failed to create task handler: %v", err)
 	}
 
-	// Register task routes
-	taskHandler.RegisterRoutes(r)
-	taskHandler.RegisterTaskStatusRoutes(r)
-
 	// Initialize project handler
 	projectHandler, err := handlers.NewProjectHandler(taskStore, templatesDir)
 	if err != nil {
 		log.Fatalf("Failed to create project handler: %v", err)
 	}
-
-	// Register project routes
-	projectHandler.RegisterRoutes(r)
 
 	// Initialize index handler
 	indexHandler, err := handlers.NewIndexHandler(taskStore, templatesDir)
@@ -105,17 +119,46 @@ func main() {
 		log.Fatalf("Failed to create index handler: %v", err)
 	}
 
-	// Home page
-	r.Get("/", indexHandler.HomePage)
+	// Public routes (don't require authentication)
+	
+	// Authentication API routes
+	authHandler.RegisterRoutes(r)
 
-	// Weekly review page
-	r.Get("/weekly-review", indexHandler.WeeklyReviewPage)
+	// Authentication pages
+	r.Get("/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		pages.Login().Render(r.Context(), w)
+	})
 
-	// API routes for hello example (from original setup)
+	r.Get("/auth/register", func(w http.ResponseWriter, r *http.Request) {
+		pages.Register().Render(r.Context(), w)
+	})
+	
+	// Public API endpoints
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/hello", handlers.HelloHandler)
 	})
 
+	// Protected routes (require authentication)
+	r.Group(func(r chi.Router) {
+		// Apply authentication middleware to all routes in this group
+		r.Use(authHandler.RequireAuthMiddleware)
+		
+		// Home page
+		r.Get("/", indexHandler.HomePage)
+		
+		// Weekly review page
+		r.Get("/weekly-review", indexHandler.WeeklyReviewPage)
+		
+		// Profile page
+		r.Get("/profile", authHandler.ProfilePage)
+		
+		// Register task routes (all task routes require authentication)
+		taskHandler.RegisterRoutes(r)
+		taskHandler.RegisterTaskStatusRoutes(r)
+		
+		// Register project routes (all project routes require authentication)
+		projectHandler.RegisterRoutes(r)
+	})
 
 	// Start server
 	server := &http.Server{
@@ -134,27 +177,30 @@ func main() {
 
 // createSampleTasks creates a few sample tasks for testing
 func createSampleTasks(store models.TaskStore) {
+	// Create a sample user ID for demonstration purposes
+	sampleUserID := "sample-user-123"
+	
 	// Inbox item
-	task1 := models.NewTask("Capture all open loops", "Gather all tasks, ideas, and commitments into the inbox")
+	task1 := models.NewTask("Capture all open loops", "Gather all tasks, ideas, and commitments into the inbox", sampleUserID)
 	store.Save(task1)
 
 	// Next action
-	task2 := models.NewTask("Process inbox items", "Go through inbox and decide what to do with each item")
+	task2 := models.NewTask("Process inbox items", "Go through inbox and decide what to do with each item", sampleUserID)
 	task2.MarkAsNext()
 	store.Save(task2)
 
 	// Waiting for
-	task3 := models.NewTask("Response from email", "Waiting for reply from team about project timeline")
+	task3 := models.NewTask("Response from email", "Waiting for reply from team about project timeline", sampleUserID)
 	task3.MarkAsWaiting()
 	store.Save(task3)
 
 	// Someday/maybe
-	task4 := models.NewTask("Learn a new language", "Consider learning Spanish or German")
+	task4 := models.NewTask("Learn a new language", "Consider learning Spanish or German", sampleUserID)
 	task4.MarkAsSomeday()
 	store.Save(task4)
 
 	// Project
-	task5 := models.NewTask("Redesign personal website", "Project to update and refresh my personal website")
+	task5 := models.NewTask("Redesign personal website", "Project to update and refresh my personal website", sampleUserID)
 	task5.MarkAsProject()
 	store.Save(task5)
 }

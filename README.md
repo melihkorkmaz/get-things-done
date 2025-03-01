@@ -66,15 +66,30 @@ go mod tidy
    The application uses a `.env` file for configuration with these default settings:
 
    ```
+   # Database configuration
    DB_HOST=localhost
    DB_PORT=5432
    DB_USER=postgres
    DB_PASSWORD=postgres
    DB_NAME=gtd
    DB_SSL_MODE=disable
-   PORT=3000
    USE_POSTGRES=true
+
+   # Authentication
+   JWT_SECRET=your-256-bit-secret-key-change-this-in-production
+   COOKIE_DOMAIN=localhost
+   COOKIE_SECURE=false
+
+   # Google OAuth
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
+   GOOGLE_REDIRECT_URL=http://localhost:3000/auth/google/callback
+
+   # Server configuration
+   PORT=3000
    ```
+   
+   You should copy .env.example to .env and customize the values for your environment.
 
    You can override these settings with environment variables:
 
@@ -118,17 +133,27 @@ go mod tidy
   - Organize: Projects, contexts, tags, and status organization
   - Reflect: Weekly review features and dashboards
   - Engage: Context-based filtering and prioritization
+- User authentication system:
+  - Traditional email/password authentication
+  - Social login with Google OAuth
+  - JWT-based authentication with secure cookies
+  - User profile management
+  - Password reset functionality
+  - Data isolation: Users can only see and manage their own tasks and projects
 - Project management with task relationships and progress tracking
 - Advanced task filtering by status, context, and tags
 - Modern UI with DaisyUI Bumblebee theme and Tailwind CSS
 - Interactive UI with minimal JavaScript using HTMX and Alpine.js
-- PostgreSQL database integration for persistence
+- PostgreSQL database integration for persistence with proper handling of NULL values
 
 ## Built With
 
 - [Go](https://golang.org/)
 - [Chi Router](https://github.com/go-chi/chi)
 - [Templ](https://templ.guide/) - Go HTML templating language
+- [JWT](https://github.com/golang-jwt/jwt) - JSON Web Token implementation
+- [Bcrypt](https://golang.org/x/crypto/bcrypt) - Password hashing
+- [OAuth2](https://golang.org/x/oauth2) - OAuth2 client implementation
 - [HTMX](https://htmx.org/) - HTML-based AJAX for modern web apps
 - [Alpine.js](https://alpinejs.dev/) - Minimal JavaScript framework
 - [DaisyUI](https://daisyui.com/) - Component library for Tailwind CSS, using Bumblebee theme

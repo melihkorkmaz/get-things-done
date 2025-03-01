@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -50,12 +51,19 @@ func (h *ProjectHandler) RegisterRoutes(r chi.Router) {
 
 // ListProjectsAPI returns a JSON list of all projects
 func (h *ProjectHandler) ListProjectsAPI(w http.ResponseWriter, r *http.Request) {
+	// Get user from context if authenticated
+	user, ok := r.Context().Value("user").(*models.User)
+	if !ok || user == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	// Get filter and sort parameters
 	filter := r.URL.Query().Get("filter")
 	sort := r.URL.Query().Get("sort")
 
-	// Get all tasks with project status
-	projects, err := h.getProjects(filter, sort)
+	// Get all tasks with project status for this user
+	projects, err := h.getProjects(filter, sort, user.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -66,9 +74,9 @@ func (h *ProjectHandler) ListProjectsAPI(w http.ResponseWriter, r *http.Request)
 }
 
 // getProjects retrieves projects with optional filtering and sorting
-func (h *ProjectHandler) getProjects(filter, sort string) ([]*models.Task, error) {
-	// First get all tasks with project status
-	tasks, err := h.store.GetByStatus(models.StatusProject)
+func (h *ProjectHandler) getProjects(filter, sort string, userID string) ([]*models.Task, error) {
+	// First get all tasks with project status for this user
+	tasks, err := h.store.GetByStatusAndUserID(models.StatusProject, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +113,15 @@ func (h *ProjectHandler) CreateProjectAPI(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Get user from context if authenticated
+	user, ok := r.Context().Value("user").(*models.User)
+	if !ok || user == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	// Create a new task with project status
-	project := models.NewTask(request.Title, request.Description)
+	project := models.NewTask(request.Title, request.Description, user.ID)
 	project.MarkAsProject()
 
 	// Set due date if provided
@@ -313,12 +328,21 @@ func (h *ProjectHandler) AddTaskToProjectAPI(w http.ResponseWriter, r *http.Requ
 
 // ListProjectsPage renders the projects list page
 func (h *ProjectHandler) ListProjectsPage(w http.ResponseWriter, r *http.Request) {
+	// Get user from context if authenticated
+	user, ok := r.Context().Value("user").(*models.User)
+	if !ok || user == nil {
+		// User should be authenticated at this point due to middleware,
+		// but this is an extra safety check
+		http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+		return
+	}
+
 	// Get filter and sort parameters
 	filter := r.URL.Query().Get("filter")
 	sort := r.URL.Query().Get("sort")
 
-	// Get all tasks with project status
-	projects, err := h.getProjects(filter, sort)
+	// Get all tasks with project status for this user
+	projects, err := h.getProjects(filter, sort, user.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -328,7 +352,7 @@ func (h *ProjectHandler) ListProjectsPage(w http.ResponseWriter, r *http.Request
 	enhancedProjects := make([]partials.ProjectInfo, 0, len(projects))
 	for _, project := range projects {
 		// Get tasks for this project
-		projectTasks, err := h.getProjectTasks(project.ID)
+		projectTasks, err := h.getProjectTasks(project.ID, user.ID)
 		if err != nil {
 			fmt.Printf("Error getting tasks for project %s: %v\n", project.ID, err)
 			continue
@@ -374,18 +398,21 @@ func (h *ProjectHandler) ListProjectsPage(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Printf("DEBUG: Rendering projects page with %d projects\n", len(enhancedProjects))
 
-	// Use templ to render the projects page
+	// Add user to context and use the base template
+	ctx := context.WithValue(r.Context(), "user", user)
+	
+	// Render the page
 	component := pages.ProjectsPage(enhancedProjects)
-	if err := component.Render(r.Context(), w); err != nil {
+	if err := component.Render(ctx, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
 // getProjectTasks retrieves all tasks associated with a project
-func (h *ProjectHandler) getProjectTasks(projectID string) ([]*models.Task, error) {
-	// Get all tasks
-	allTasks, err := h.store.GetAll()
+func (h *ProjectHandler) getProjectTasks(projectID string, userID string) ([]*models.Task, error) {
+	// Get all tasks for this user
+	allTasks, err := h.store.GetAllByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -412,8 +439,15 @@ func (h *ProjectHandler) CreateProjectSubmit(w http.ResponseWriter, r *http.Requ
 	description := r.FormValue("description")
 	dueDateStr := r.FormValue("due_date")
 
+	// Get user from context if authenticated
+	user, ok := r.Context().Value("user").(*models.User)
+	if !ok || user == nil {
+		http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+		return
+	}
+
 	// Create a new task with project status
-	project := models.NewTask(title, description)
+	project := models.NewTask(title, description, user.ID)
 	project.MarkAsProject()
 
 	// Set due date if provided
@@ -438,6 +472,15 @@ func (h *ProjectHandler) CreateProjectSubmit(w http.ResponseWriter, r *http.Requ
 
 // ViewProjectPage renders a single project view
 func (h *ProjectHandler) ViewProjectPage(w http.ResponseWriter, r *http.Request) {
+	// Get user from context if authenticated
+	user, ok := r.Context().Value("user").(*models.User)
+	if !ok || user == nil {
+		// User should be authenticated at this point due to middleware,
+		// but this is an extra safety check
+		http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+		return
+	}
+
 	id := chi.URLParam(r, "id")
 	project, err := h.store.Get(id)
 	if err != nil {
@@ -452,7 +495,7 @@ func (h *ProjectHandler) ViewProjectPage(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Get tasks for this project
-	projectTasks, err := h.getProjectTasks(project.ID)
+	projectTasks, err := h.getProjectTasks(project.ID, user.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -473,7 +516,7 @@ func (h *ProjectHandler) ViewProjectPage(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Get available tasks (not assigned to any project)
-	availableTasks, err := h.getAvailableTasks()
+	availableTasks, err := h.getAvailableTasks(user.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -534,18 +577,21 @@ func (h *ProjectHandler) ViewProjectPage(w http.ResponseWriter, r *http.Request)
 	fmt.Printf("DEBUG: Rendering project detail page for project %s with %d tasks\n",
 		project.ID, len(projectTasks))
 
-	// Use templ to render the project detail page
+	// Add user to context and use the base template
+	ctx := context.WithValue(r.Context(), "user", user)
+	
+	// Render the page
 	component := pages.ProjectDetailPage(enhancedProject, templTasks, templAvailableTasks)
-	if err := component.Render(r.Context(), w); err != nil {
+	if err := component.Render(ctx, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
 // getAvailableTasks retrieves tasks that aren't already assigned to a project
-func (h *ProjectHandler) getAvailableTasks() ([]*models.Task, error) {
-	// Get all tasks
-	allTasks, err := h.store.GetAll()
+func (h *ProjectHandler) getAvailableTasks(userID string) ([]*models.Task, error) {
+	// Get all tasks for this user
+	allTasks, err := h.store.GetAllByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -586,7 +632,7 @@ func (h *ProjectHandler) EditProjectForm(w http.ResponseWriter, r *http.Request)
 	// We'll need project info when we create the edit form
 
 	w.Header().Set("Content-Type", "text/html")
-	
+
 	// For now, we'll redirect to the project view page since we don't have an edit template yet
 	http.Redirect(w, r, "/projects/"+project.ID, http.StatusSeeOther)
 }
@@ -618,8 +664,15 @@ func (h *ProjectHandler) AddTaskToProjectSubmit(w http.ResponseWriter, r *http.R
 	status := r.FormValue("status")
 	dueDateStr := r.FormValue("due_date")
 
+	// Get user from context if authenticated
+	user, ok := r.Context().Value("user").(*models.User)
+	if !ok || user == nil {
+		http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+		return
+	}
+
 	// Create a new task
-	task := models.NewTask(title, description)
+	task := models.NewTask(title, description, user.ID)
 
 	// Set status based on form input
 	switch status {

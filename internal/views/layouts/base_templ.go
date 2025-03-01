@@ -8,7 +8,19 @@ package layouts
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/melihkorkmaz/gtd/internal/views/partials"
+import (
+	"context"
+	"github.com/melihkorkmaz/gtd/internal/models"
+	"github.com/melihkorkmaz/gtd/internal/views/partials"
+)
+
+// ContextUser tries to get user from the context if available
+func ContextUser(ctx context.Context) *models.User {
+	if user, ok := ctx.Value("user").(*models.User); ok {
+		return user
+	}
+	return nil
+}
 
 func Base(title string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -31,28 +43,94 @@ func Base(title string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Var2 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+			if !templ_7745c5c3_IsBuffer {
+				defer func() {
+					templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+					if templ_7745c5c3_Err == nil {
+						templ_7745c5c3_Err = templ_7745c5c3_BufErr
+					}
+				}()
+			}
+			ctx = templ.InitializeContext(ctx)
+			templ_7745c5c3_Err = templ_7745c5c3_Var1.Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			return nil
+		})
+		templ_7745c5c3_Err = BaseWithUser(title, ContextUser(ctx)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func BaseWithUser(title string, user *models.User) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var3 == nil {
+			templ_7745c5c3_Var3 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" data-theme=\"bumblebee\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var2 string
-		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		var templ_7745c5c3_Var4 string
+		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/layouts/base.templ`, Line: 11, Col: 16}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/layouts/base.templ`, Line: 31, Col: 16}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><!-- DaisyUI with Tailwind CSS --><link href=\"https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css\" rel=\"stylesheet\" type=\"text/css\"><script src=\"https://cdn.tailwindcss.com\"></script><script>\n\t\t\ttailwind.config = {\n\t\t\t\ttheme: { extend: {} },\n\t\t\t\tdaisyui: { themes: [\"bumblebee\"] }\n\t\t\t}\n\t\t</script><!-- Alpine.js --><script defer src=\"https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js\"></script><!-- HTMX --><script src=\"https://unpkg.com/htmx.org@1.9.6\"></script><!-- Custom CSS --><link rel=\"stylesheet\" href=\"/static/css/main.css\"></head><body class=\"min-h-screen bg-base-200\"><div class=\"flex h-screen\"><!-- Sidebar Navigation --><aside class=\"w-64 bg-base-100 h-screen shadow-lg flex flex-col\"><div class=\"p-4 border-b border-base-300\"><a href=\"/\" class=\"text-xl font-bold text-primary\">GTD App</a></div><nav class=\"flex-1 overflow-y-auto p-4\"><ul class=\"menu menu-md space-y-1\"><li class=\"menu-title\"><span>Main</span></li><li><a href=\"/tasks\" class=\"flex items-center gap-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 6h16M4 12h16M4 18h16\"></path></svg> All Tasks</a></li><li><a href=\"/tasks?status=inbox\" class=\"flex items-center gap-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4\"></path></svg> Inbox</a></li><li><a href=\"/tasks?status=next\" class=\"flex items-center gap-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M13 5l7 7-7 7M5 5l7 7-7 7\"></path></svg> Next Actions</a></li><li><a href=\"/tasks?status=waiting\" class=\"flex items-center gap-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg> Waiting For</a></li><li class=\"menu-title\"><span>Projects</span></li><li><a href=\"/projects\" class=\"flex items-center gap-3 text-primary font-medium\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2\"></path></svg> Projects</a></li><li class=\"menu-title\"><span>More</span></li><li><a href=\"/tasks?status=someday\" class=\"flex items-center gap-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z\"></path></svg> Someday/Maybe</a></li><li><a href=\"/weekly-review\" class=\"flex items-center gap-3 text-accent\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg> Weekly Review</a></li></ul></nav><div class=\"p-4 border-t border-base-300\"><button class=\"btn btn-success btn-block\" onclick=\"document.getElementById(&#39;quick-capture-modal&#39;).showModal()\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Quick Capture</button></div></aside><!-- Main Content Area --><div class=\"flex-1 flex flex-col overflow-hidden\"><!-- Top Header --><header class=\"bg-base-100 shadow-md\"><div class=\"flex items-center justify-between px-6 py-3\"><!-- Search Bar --><div class=\"flex-1 max-w-md\"><form action=\"/tasks/search\" method=\"GET\" hx-get=\"/tasks/search\" hx-trigger=\"submit\" hx-target=\"#main-content\" hx-swap=\"innerHTML\"><div class=\"relative\"><span class=\"absolute inset-y-0 left-0 flex items-center pl-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 text-gray-400\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z\"></path></svg></span> <input type=\"text\" name=\"q\" placeholder=\"Search tasks...\" class=\"input input-bordered w-full pl-10\" hx-get=\"/tasks/search\" hx-trigger=\"keyup changed delay:500ms\" hx-target=\"#search-results\" hx-indicator=\".search-indicator\"> <span class=\"search-indicator absolute right-3 top-1/2 transform -translate-y-1/2 hidden\"><span class=\"loading loading-spinner loading-xs\"></span></span></div></form></div><!-- User Menu --><div class=\"dropdown dropdown-end ml-4\"><label tabindex=\"0\" class=\"btn btn-ghost btn-circle avatar\"><div class=\"avatar placeholder\"><div class=\"bg-neutral text-neutral-content rounded-full w-10\"><span>MK</span></div></div></label><ul tabindex=\"0\" class=\"mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52\"><li><a>Profile</a></li><li><a>Settings</a></li><div class=\"divider my-1\"></div><li><a>Logout</a></li></ul></div></div></header><!-- Main Content --><main class=\"flex-1 overflow-y-auto p-6 bg-base-200\"><div id=\"main-content\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templ_7745c5c3_Var1.Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><!-- DaisyUI with Tailwind CSS --><link href=\"https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css\" rel=\"stylesheet\" type=\"text/css\"><script src=\"https://cdn.tailwindcss.com\"></script><script>\n    tailwind.config = {\n      theme: {extend: {}},\n      daisyui: {themes: [\"bumblebee\"]}\n    }\n  </script><!-- Alpine.js --><script defer src=\"https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js\"></script><!-- HTMX --><script src=\"https://unpkg.com/htmx.org@1.9.6\"></script><!-- Custom CSS --><link rel=\"stylesheet\" href=\"/static/css/main.css\"></head><body class=\"min-h-screen bg-base-200\"><div class=\"flex h-screen\"><!-- Sidebar Navigation --><aside class=\"w-64 bg-base-100 h-screen shadow-lg flex flex-col\"><div class=\"p-4 border-b border-base-300\"><a href=\"/\" class=\"text-xl font-bold text-primary\">GTD App</a></div><nav class=\"flex-1 overflow-y-auto p-4\"><ul class=\"menu menu-md space-y-1\"><li class=\"menu-title\"><span>Main</span></li><li><a href=\"/tasks\" class=\"flex items-center gap-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 6h16M4 12h16M4 18h16\"></path></svg> All Tasks</a></li><li><a href=\"/tasks?status=inbox\" class=\"flex items-center gap-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4\"></path></svg> Inbox</a></li><li><a href=\"/tasks?status=next\" class=\"flex items-center gap-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M13 5l7 7-7 7M5 5l7 7-7 7\"></path></svg> Next Actions</a></li><li><a href=\"/tasks?status=waiting\" class=\"flex items-center gap-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg> Waiting For</a></li><li class=\"menu-title\"><span>Projects</span></li><li><a href=\"/projects\" class=\"flex items-center gap-3 text-primary font-medium\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2\"></path></svg> Projects</a></li><li class=\"menu-title\"><span>More</span></li><li><a href=\"/tasks?status=someday\" class=\"flex items-center gap-3\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z\"></path></svg> Someday/Maybe</a></li><li><a href=\"/weekly-review\" class=\"flex items-center gap-3 text-accent\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z\"></path></svg> Weekly Review</a></li></ul></nav><div class=\"p-4 border-t border-base-300\"><button class=\"btn btn-success btn-block\" onclick=\"document.getElementById(&#39;quick-capture-modal&#39;).showModal()\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"h-5 w-5 mr-2\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Quick Capture</button></div></aside><!-- Main Content Area --><div class=\"flex-1 flex flex-col overflow-hidden\"><!-- Top Header with Navbar --><header class=\"bg-base-100 shadow-md\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><div id=\"search-results\" class=\"mt-4\"></div></main><!-- Footer --><footer class=\"bg-base-100 p-4 text-center border-t border-base-300\"><p class=\"text-sm text-base-content\">Copyright © 2025 - All rights reserved</p></footer></div></div><!-- Quick capture modal -->")
+		if user == nil {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, " ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = partials.Navbar(ContextUser(ctx)).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			templ_7745c5c3_Err = partials.Navbar(user).Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</header><!-- Main Content --><main class=\"flex-1 overflow-y-auto p-6 bg-base-200\"><div id=\"main-content\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ_7745c5c3_Var3.Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><div id=\"search-results\" class=\"mt-4\"></div></main><!-- Footer --><footer class=\"bg-base-100 p-4 text-center border-t border-base-300\"><p class=\"text-sm text-base-content\">Copyright © 2025 - All rights reserved</p></footer></div></div><!-- Quick capture modal -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -60,7 +138,7 @@ func Base(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<!-- Custom JS --><script src=\"/static/js/main.js\"></script><script>\n\t\t\t// Function to submit quick capture form with Ctrl+Enter\n\t\t\tfunction submitQuickCapture() {\n\t\t\t\tdocument.getElementById('quick-capture-submit').click();\n\t\t\t}\n\t\t\t\n\t\t\t// Global keyboard shortcut for quick capture (ALT+N)\n\t\t\tdocument.addEventListener('keydown', function(e) {\n\t\t\t\tif (e.altKey && e.key === 'n') {\n\t\t\t\t\te.preventDefault();\n\t\t\t\t\tdocument.getElementById('quick-capture-modal').showModal();\n\t\t\t\t}\n\t\t\t});\n\t\t</script></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<!-- Custom JS --><script src=\"/static/js/main.js\"></script><script>\n    // Function to submit quick capture form with Ctrl+Enter\n    function submitQuickCapture() {\n      document.getElementById('quick-capture-submit').click();\n    }\n\n    // Global keyboard shortcut for quick capture (ALT+N)\n    document.addEventListener('keydown', function (e) {\n      if (e.altKey && e.key === 'n') {\n        e.preventDefault();\n        document.getElementById('quick-capture-modal').showModal();\n      }\n    });\n  </script></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

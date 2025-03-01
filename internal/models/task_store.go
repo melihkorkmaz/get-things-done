@@ -10,8 +10,11 @@ import (
 type TaskStore interface {
 	Get(id string) (*Task, error)
 	GetAll() ([]*Task, error)
+	GetAllByUserID(userID string) ([]*Task, error)
 	GetByStatus(status TaskStatus) ([]*Task, error)
+	GetByStatusAndUserID(status TaskStatus, userID string) ([]*Task, error)
 	Search(query string) ([]*Task, error)
+	SearchByUserID(query string, userID string) ([]*Task, error)
 	Save(task *Task) error
 	Delete(id string) error
 }
@@ -63,6 +66,21 @@ func (s *MemoryTaskStore) GetAll() ([]*Task, error) {
 	return result, nil
 }
 
+// GetAllByUserID returns all non-deleted tasks for a specific user
+func (s *MemoryTaskStore) GetAllByUserID(userID string) ([]*Task, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	var result []*Task
+	for _, task := range s.tasks {
+		if !task.IsDeleted() && task.UserID == userID {
+			result = append(result, task)
+		}
+	}
+
+	return result, nil
+}
+
 // GetByStatus returns all tasks with the specified status
 func (s *MemoryTaskStore) GetByStatus(status TaskStatus) ([]*Task, error) {
 	s.mutex.RLock()
@@ -71,6 +89,21 @@ func (s *MemoryTaskStore) GetByStatus(status TaskStatus) ([]*Task, error) {
 	var result []*Task
 	for _, task := range s.tasks {
 		if task.Status == status && !task.IsDeleted() {
+			result = append(result, task)
+		}
+	}
+
+	return result, nil
+}
+
+// GetByStatusAndUserID returns all tasks with the specified status for a specific user
+func (s *MemoryTaskStore) GetByStatusAndUserID(status TaskStatus, userID string) ([]*Task, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	var result []*Task
+	for _, task := range s.tasks {
+		if task.Status == status && task.UserID == userID && !task.IsDeleted() {
 			result = append(result, task)
 		}
 	}
@@ -118,6 +151,48 @@ func (s *MemoryTaskStore) Search(query string) ([]*Task, error) {
 	for _, task := range s.tasks {
 		// Skip deleted tasks
 		if task.IsDeleted() {
+			continue
+		}
+
+		// Check if query is in title or description (case insensitive)
+		if strings.Contains(strings.ToLower(task.Title), lowerQuery) ||
+			strings.Contains(strings.ToLower(task.Description), lowerQuery) {
+			result = append(result, task)
+		}
+
+		// Also search in contexts and tags
+		for _, context := range task.Contexts {
+			if strings.Contains(strings.ToLower(string(context)), lowerQuery) {
+				result = append(result, task)
+				break // No need to check other contexts
+			}
+		}
+
+		// Check tags
+		for _, tag := range task.Tags {
+			if strings.Contains(strings.ToLower(tag), lowerQuery) {
+				result = append(result, task)
+				break // No need to check other tags
+			}
+		}
+	}
+
+	return result, nil
+}
+
+// SearchByUserID finds tasks for a specific user that match the query in title, description, contexts, or tags
+func (s *MemoryTaskStore) SearchByUserID(query string, userID string) ([]*Task, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	var result []*Task
+
+	// Convert query to lowercase for case-insensitive search
+	lowerQuery := strings.ToLower(query)
+
+	for _, task := range s.tasks {
+		// Skip deleted tasks and tasks not belonging to the user
+		if task.IsDeleted() || task.UserID != userID {
 			continue
 		}
 

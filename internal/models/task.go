@@ -39,6 +39,7 @@ type Task struct {
 	Title          string     `json:"title"`
 	Description    string     `json:"description"`
 	Status         TaskStatus `json:"status"`
+	UserID         string     `json:"userId,omitempty"`         // User who owns this task
 	ProjectID      string     `json:"projectId,omitempty"`      // For tasks that are part of a project
 	ParentID       string     `json:"parentId,omitempty"`       // For hierarchical tasks
 	Contexts       []Context  `json:"contexts,omitempty"`       // Where this can be done (home, work, phone, etc.)
@@ -58,12 +59,13 @@ type Task struct {
 }
 
 // NewTask creates a new task with default values (in inbox)
-func NewTask(title, description string) *Task {
+func NewTask(title, description string, userID string) *Task {
 	now := time.Now()
 	return &Task{
 		ID:          GenerateID(),
 		Title:       title,
 		Description: description,
+		UserID:      userID,
 		Status:      StatusInbox,
 		CreatedAt:   now,
 		UpdatedAt:   now,
